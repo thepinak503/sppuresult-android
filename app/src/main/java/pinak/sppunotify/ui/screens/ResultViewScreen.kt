@@ -1,6 +1,12 @@
 package pinak.sppunotify.ui.screens
 
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,8 +27,21 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import pinak.sppunotify.util.FileSaver
 import pinak.sppunotify.util.NotificationHelper
+
+class CreateDynamicDocument : ActivityResultContract<Pair<String, String>, Uri?>() {
+    override fun createIntent(context: Context, input: Pair<String, String>): Intent {
+        return Intent(Intent.ACTION_CREATE_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType(input.second)
+            .putExtra(Intent.EXTRA_TITLE, input.first)
+    }
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+        return if (intent == null || resultCode != Activity.RESULT_OK) null else intent.data
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +51,7 @@ fun ResultViewScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val notificationHelper = remember { NotificationHelper(context) }
 
@@ -42,6 +62,35 @@ fun ResultViewScreen(
     var dialogTitle by remember { mutableStateOf("") }
     var dialogMessage by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(value = false) }
+
+    var pendingSaveData by remember { mutableStateOf<ResultViewEvent.SaveResult?>(null) }
+
+    val createFileLauncher = rememberLauncherForActivityResult(
+        contract = CreateDynamicDocument()
+    ) { uri ->
+        val data = pendingSaveData
+        if (uri != null && data != null) {
+            val success = FileSaver.saveToUri(context, data.bytes, uri)
+            notificationHelper.showDownloadNotification(success, data.suggestedName)
+            
+            scope.launch {
+                if (success) {
+                    snackbarHostState.showSnackbar("Result saved successfully")
+                    try {
+                        val openIntent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, data.mimeType)
+                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                    Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(openIntent)
+                    } catch (_: Exception) {}
+                } else {
+                    snackbarHostState.showSnackbar("Failed to save result")
+                }
+            }
+        }
+        pendingSaveData = null
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
@@ -55,31 +104,8 @@ fun ResultViewScreen(
                     showDialog = true
                 }
                 is ResultViewEvent.SaveResult -> {
-                    val uri = FileSaver.saveToDownloads(
-                        context = context,
-                        bytes = event.bytes,
-                        fileName = event.suggestedName,
-                        mimeType = event.mimeType,
-                    )
-                    
-                    val success = uri != null
-                    notificationHelper.showDownloadNotification(success, event.suggestedName)
-                    
-                    if (success) {
-                        snackbarHostState.showSnackbar("Result saved to Downloads")
-                        try {
-                            val openIntent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(uri, event.mimeType)
-                                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                        Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            context.startActivity(openIntent)
-                        } catch (_: Exception) {
-                            // ignore
-                        }
-                    } else {
-                        snackbarHostState.showSnackbar("Failed to save result")
-                    }
+                    pendingSaveData = event
+                    createFileLauncher.launch(event.suggestedName to event.mimeType)
                 }
             }
         }

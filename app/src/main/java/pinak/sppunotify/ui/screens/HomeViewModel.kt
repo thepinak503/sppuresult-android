@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pinak.sppunotify.data.local.ResultEntity
 import pinak.sppunotify.data.repository.ResultRepository
+import pinak.sppunotify.util.DepartmentClassifier
 import javax.inject.Inject
 
 enum class SortOrder { NEWEST_FIRST, OLDEST_FIRST }
@@ -41,104 +42,7 @@ class HomeViewModel @Inject constructor(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    val departments = listOf(
-        "All", "FE", "SE", "TE", "BE",
-        "MBA", "MCA", "M.Sc", "M.A./M.Com",
-        "B.Sc", "B.Com", "BBA/BCA", "B.A.",
-        "B.Pharm", "Other UG", "Other PG",
-        "Law", "Diploma",
-    )
-
-    private fun classifyDept(title: String): String {
-        val n = title.replace(Regex("^(FIRST|SECOND|THIRD|FOURTH|FINAL)\\s+YEAR\\s+", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("^FirstYear\\s+"), "")
-        val nu = n.uppercase()
-        // FE
-        if (Regex("^F\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE).containsMatchIn(title) ||
-            Regex("^FIRST\\s+YEAR\\s+ENGINEERING", RegexOption.IGNORE_CASE).containsMatchIn(title)
-        ) return "FE"
-        // SE
-        if (Regex("^S\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE).containsMatchIn(title)) return "SE"
-        // TE
-        if (Regex("^T\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE).containsMatchIn(title)) return "TE"
-        // BE
-        if (Regex("^B\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE).containsMatchIn(title)) return "BE"
-        // MBA
-        if (Regex("^M\\.?\\s*B\\.?\\s*A", RegexOption.IGNORE_CASE).containsMatchIn(n) ||
-            Regex("\\bMBA\\b").containsMatchIn(nu) ||
-            Regex("MASTER\\s+OF\\s+BUSINESS\\s+ADMINISTRATION", RegexOption.IGNORE_CASE).containsMatchIn(nu)
-        ) return "MBA"
-        // MCA / MCS
-        if (Regex("^M\\.?(CA|CS)\\b", RegexOption.IGNORE_CASE).containsMatchIn(n) ||
-            Regex("MASTER\\s+OF\\s+COMPUTER\\s+(?:APPLICATION|APPLICATIONS)", RegexOption.IGNORE_CASE).containsMatchIn(nu)
-        ) return "MCA"
-        // Other Masters (Pharm, Arch, Ed, etc.)
-        if (Regex("^M\\.?\\s*(?:PHARM|ARCH|ED|E\\.?)\\b", RegexOption.IGNORE_CASE).containsMatchIn(n) ||
-            Regex("^MASTER\\s+OF\\s+(?:LIBRARY|EDUCATION|HOSPITAL|PHARMACY|ARCHITECTURE|ENGINEERING)", RegexOption.IGNORE_CASE).containsMatchIn(nu)
-        ) return "Other PG"
-        // M.Sc
-        if (Regex("^M\\.?\\s*SC\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "M.Sc"
-        // M.A. / M.Com
-        if (Regex("^M\\.?\\s*(?:A|COM)\\b", RegexOption.IGNORE_CASE).containsMatchIn(n) ||
-            Regex("^MASTER\\s+OF\\s+(?:COMMERCE|ARTS)", RegexOption.IGNORE_CASE).containsMatchIn(nu)
-        ) return "M.A./M.Com"
-        // Catch-all Master of
-        if (Regex("^MASTER\\s+OF\\b", RegexOption.IGNORE_CASE).containsMatchIn(n) ||
-            Regex("^MASTERS?\\s+IN\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)
-        ) return "Other PG"
-        // Law
-        if (Regex("^LL[BMD]\\b").containsMatchIn(title) ||
-            Regex("^B\\.?\\s*A\\.?\\s*LL", RegexOption.IGNORE_CASE).containsMatchIn(title) ||
-            Regex("^LL[BMD]\\b").containsMatchIn(n) ||
-            Regex("^B\\.?\\s*A\\.?\\s*LL", RegexOption.IGNORE_CASE).containsMatchIn(n)
-        ) return "Law"
-        // Diploma
-        if (Regex("^DIPLOMA\\b", RegexOption.IGNORE_CASE).containsMatchIn(title) ||
-            Regex("^POST\\s+GRADUATE\\s+DIPLOMA", RegexOption.IGNORE_CASE).containsMatchIn(title)
-        ) return "Diploma"
-        if (Regex("^POST\\s+GRADUATE\\s+", RegexOption.IGNORE_CASE).containsMatchIn(title)) return "Diploma"
-        // Year-prefixed UG programs
-        if (Regex("^(FIRST|SECOND|THIRD|FOURTH|FINAL)\\s+YEAR\\s+", RegexOption.IGNORE_CASE).containsMatchIn(title) ||
-            Regex("^FirstYear\\s+").containsMatchIn(title)
-        ) {
-            if (Regex("BACHELOR\\s+OF\\s+SCIENCE", RegexOption.IGNORE_CASE).containsMatchIn(nu) ||
-                Regex("B\\.?\\s*SC", RegexOption.IGNORE_CASE).containsMatchIn(n)
-            ) return "B.Sc"
-            if (Regex("BACHELOR\\s+OF\\s+COMMERCE", RegexOption.IGNORE_CASE).containsMatchIn(nu) ||
-                Regex("B\\.?\\s*COM\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)
-            ) return "B.Com"
-            if (Regex("BACHELOR\\s+OF\\s+ARTS", RegexOption.IGNORE_CASE).containsMatchIn(nu) ||
-                Regex("B\\.?\\s*A\\b(?!\\.?\\s*LL)", RegexOption.IGNORE_CASE).containsMatchIn(n)
-            ) return "B.A."
-            if (Regex("BACHELOR\\s+OF\\s+BUSINESS\\s+ADMINISTRATION", RegexOption.IGNORE_CASE).containsMatchIn(nu) ||
-                Regex("B\\.?\\s*B\\.?\\s*A", RegexOption.IGNORE_CASE).containsMatchIn(n) ||
-                Regex("BACHELOR\\s+OF\\s+COMPUTER\\s+APPLICATION", RegexOption.IGNORE_CASE).containsMatchIn(nu) ||
-                Regex("B\\.?\\s*C\\.?\\s*A", RegexOption.IGNORE_CASE).containsMatchIn(n)
-            ) return "BBA/BCA"
-            return "Other UG"
-        }
-        // Direct UG codes
-        if (Regex("^B\\.?\\s*SC\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "B.Sc"
-        if (Regex("^B\\.?\\s*COM\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "B.Com"
-        if (Regex("^B\\.?(?:BA|B\\.?\\s*A)\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "BBA/BCA"
-        if (Regex("^B\\.?\\s*CA\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "BBA/BCA"
-        if (Regex("^B\\.?\\s*A\\b(?!\\.?\\s*LL)", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "B.A."
-        if (Regex("^B\\.?(?:PHARM|ARCH|ED|HMCT)\\b", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "Other UG"
-        if (Regex("^BACHELOR\\s+(?:OF|IN)\\s+", RegexOption.IGNORE_CASE).containsMatchIn(nu)) {
-            if (Regex("SCIENCE", RegexOption.IGNORE_CASE).containsMatchIn(nu)) return "B.Sc"
-            if (Regex("COMMERCE", RegexOption.IGNORE_CASE).containsMatchIn(nu)) return "B.Com"
-            if (Regex("ARTS", RegexOption.IGNORE_CASE).containsMatchIn(nu)) return "B.A."
-            if (Regex("BUSINESS\\s+ADMINISTRATION", RegexOption.IGNORE_CASE).containsMatchIn(nu) ||
-                Regex("COMPUTER\\s+APPLICATION", RegexOption.IGNORE_CASE).containsMatchIn(nu)
-            ) return "BBA/BCA"
-            return "Other UG"
-        }
-        // LLM
-        if (Regex("^LLM\\b").containsMatchIn(title) || Regex("^LLM\\b").containsMatchIn(n)) return "Law"
-        // B.Pharm
-        if (Regex("B\\.?PHR?ARM", RegexOption.IGNORE_CASE).containsMatchIn(n)) return "B.Pharm"
-        return "Other UG"
-    }
+    val departments = DepartmentClassifier.departments
 
     val results: StateFlow<List<ResultEntity>> = combine(
         repository.results,
@@ -147,18 +51,28 @@ class HomeViewModel @Inject constructor(
         _sortOrder,
     ) { results, query, dept, sortOrder ->
         _totalCount.value = results.size
+        
+        val trimmedQuery = query.trim().lowercase()
+        val tokens = if (trimmedQuery.isEmpty()) emptyList() else trimmedQuery.split(WHITESPACE_REGEX)
+
         val filtered = results.filter { result ->
-            val matchesQuery = if (query.isBlank()) true else {
-                fuzzyMatch(result.title, query) ||
-                fuzzyMatch(result.patternName, query) ||
-                fuzzyMatch(result.publishedDate, query) ||
-                fuzzyMatch(result.url, query)
-            }
-            val matchesDept = dept == "All" || classifyDept(result.title) == dept
-            matchesQuery && matchesDept
+            val matchesDept = dept == "All" || result.department == dept
+            if (!matchesDept) return@filter false
+            
+            if (tokens.isEmpty()) return@filter true
+            
+            val targetLower = result.title.lowercase() + " " + 
+                              result.patternName.lowercase() + " " + 
+                              result.publishedDate.lowercase()
+            
+            tokens.all { token -> tokenFuzzyMatch(targetLower, token) }
         }
-        val dateSorted = if (sortOrder == SortOrder.NEWEST_FIRST) filtered else filtered.reversed()
-        if (query.isBlank()) dateSorted else dateSorted.sortedByDescending { rankResult(it, query) }
+
+        if (tokens.isEmpty()) {
+            if (sortOrder == SortOrder.NEWEST_FIRST) filtered else filtered.reversed()
+        } else {
+            filtered.sortedByDescending { rankResult(it, tokens) }
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -174,10 +88,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun toggleSortOrder() {
-        _sortOrder.value = when (_sortOrder.value) {
-            SortOrder.NEWEST_FIRST -> SortOrder.OLDEST_FIRST
-            SortOrder.OLDEST_FIRST -> SortOrder.NEWEST_FIRST
-        }
+        _sortOrder.value = if (_sortOrder.value == SortOrder.NEWEST_FIRST) SortOrder.OLDEST_FIRST else SortOrder.NEWEST_FIRST
     }
 
     fun refresh() {
@@ -186,9 +97,7 @@ class HomeViewModel @Inject constructor(
             try {
                 val newResults = repository.fetchResults()
                 if (newResults.isEmpty()) {
-                    // Check if we already have cached data
-                    val cachedCount = repository.getCachedCount()
-                    if (cachedCount == 0) {
+                    if (repository.getCachedCount() == 0) {
                         _uiEvent.send(UiEvent.ShowSnackbar("No results loaded. Pull down to retry."))
                     }
                 } else {
@@ -196,29 +105,17 @@ class HomeViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 val msg = when {
-                    e.message?.contains("502") == true -> "SPPU server is down (502 Bad Gateway). Please try again later."
-                    e.message?.contains("503") == true -> "SPPU server is busy (503 Service Unavailable). Try again later."
-                    e.message?.contains("504") == true -> "SPPU server timed out (504 Gateway Time-out). The server didn't respond in time."
-                    e.message?.contains("timeout", ignoreCase = true) == true -> "Connection timed out. SPPU server may be slow."
-                    e.message?.contains("SSL", ignoreCase = true) == true -> "SSL connection error. SPPU certificate issue detected."
-                    e.message?.contains("refused", ignoreCase = true) == true -> "Connection refused. SPPU server may be down."
-                    e.message?.contains("reset", ignoreCase = true) == true -> "Connection reset by server. Try again."
-                    e.message?.contains("unreachable", ignoreCase = true) == true -> "Host unreachable. Check your internet connection."
-                    e.message?.contains("DNS", ignoreCase = true) == true -> "DNS lookup failed. Check your internet connection."
-                    else -> "Something went wrong: ${e.message ?: "Unknown error"}"
+                    e.message?.contains("502") == true -> "SPPU server is down (502 Bad Gateway)."
+                    e.message?.contains("503") == true -> "SPPU server is busy (503 Service Unavailable)."
+                    e.message?.contains("504") == true -> "SPPU server timed out (504 Gateway Time-out)."
+                    e.message?.contains("timeout", ignoreCase = true) == true -> "Connection timed out."
+                    else -> "Network error: ${e.message ?: "Unknown"}"
                 }
                 _uiEvent.send(UiEvent.ShowErrorDialog("Warning", msg))
             } finally {
                 _isRefreshing.value = false
             }
         }
-    }
-
-    private fun fuzzyMatch(target: String, query: String): Boolean {
-        if (query.isBlank()) return true
-        val targetLower = target.lowercase()
-        val tokens = query.lowercase().trim().split(Regex("\\s+"))
-        return tokens.all { token -> tokenFuzzyMatch(targetLower, token) }
     }
 
     private fun tokenFuzzyMatch(targetLower: String, token: String): Boolean {
@@ -234,9 +131,7 @@ class HomeViewModel @Inject constructor(
         return qi == token.length
     }
 
-    private fun rankResult(result: ResultEntity, query: String): Int {
-        val q = query.lowercase().trim()
-        val tokens = q.split(Regex("\\s+"))
+    private fun rankResult(result: ResultEntity, tokens: List<String>): Int {
         return scoreField(result.title.lowercase(), tokens, 100) +
                scoreField(result.patternName.lowercase(), tokens, 50) +
                scoreField(result.publishedDate.lowercase(), tokens, 25)
@@ -253,6 +148,10 @@ class HomeViewModel @Inject constructor(
             }
         }
         return score
+    }
+
+    companion object {
+        private val WHITESPACE_REGEX = Regex("\\s+")
     }
 
     sealed class UiEvent {

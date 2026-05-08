@@ -21,7 +21,7 @@ object AppModule {
             context,
             ResultDatabase::class.java,
             "results.db"
-        ).addMigrations(ResultDatabase.MIGRATION_1_2)
+        ).addMigrations(ResultDatabase.MIGRATION_1_2, ResultDatabase.MIGRATION_2_3)
             .build()
     }
 }

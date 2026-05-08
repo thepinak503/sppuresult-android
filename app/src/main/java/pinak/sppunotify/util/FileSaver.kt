@@ -10,6 +10,17 @@ import java.io.File
 import java.io.FileOutputStream
 
 object FileSaver {
+    fun saveToUri(context: Context, bytes: ByteArray, uri: Uri): Boolean {
+        return try {
+            context.contentResolver.openOutputStream(uri)?.use { os ->
+                os.write(bytes)
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     fun saveToDownloads(context: Context, bytes: ByteArray, fileName: String, mimeType: String): Uri? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver

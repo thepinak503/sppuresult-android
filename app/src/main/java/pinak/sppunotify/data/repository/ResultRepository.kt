@@ -7,6 +7,7 @@ import pinak.sppunotify.data.local.ResultDatabase
 import pinak.sppunotify.data.local.ResultEntity
 import pinak.sppunotify.data.remote.ResultDto
 import pinak.sppunotify.data.remote.ResultScraper
+import pinak.sppunotify.util.DepartmentClassifier
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,6 +47,7 @@ class ResultRepository @Inject constructor(
         publishedTimestamp = ResultScraper.parseDateToTimestamp(published),
         patternName = patternName,
         patternId = patternId,
+        department = DepartmentClassifier.classify(title),
         fetchedAt = System.currentTimeMillis(),
     )
 }
