@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import pinak.sppunotify.data.local.RevalCourseDao
 import pinak.sppunotify.data.local.ResultDatabase
 import javax.inject.Singleton
 
@@ -21,7 +22,11 @@ object AppModule {
             context,
             ResultDatabase::class.java,
             "results.db"
-        ).addMigrations(ResultDatabase.MIGRATION_1_2, ResultDatabase.MIGRATION_2_3)
+        ).addMigrations(ResultDatabase.MIGRATION_1_2, ResultDatabase.MIGRATION_2_3, ResultDatabase.MIGRATION_3_4)
             .build()
     }
+
+    @Provides
+    @Singleton
+    fun provideRevalCourseDao(db: ResultDatabase): RevalCourseDao = db.revalDao
 }

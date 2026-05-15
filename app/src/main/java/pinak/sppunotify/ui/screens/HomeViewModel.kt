@@ -17,7 +17,12 @@ import pinak.sppunotify.data.repository.ResultRepository
 import pinak.sppunotify.util.DepartmentClassifier
 import javax.inject.Inject
 
-enum class SortOrder { NEWEST_FIRST, OLDEST_FIRST }
+enum class SortOrder(val label: String) {
+    NEWEST_FIRST("Newest First"),
+    OLDEST_FIRST("Oldest First"),
+    NAME_A_Z("Name A-Z"),
+    NAME_Z_A("Name Z-A"),
+}
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -51,25 +56,30 @@ class HomeViewModel @Inject constructor(
         _sortOrder,
     ) { results, query, dept, sortOrder ->
         _totalCount.value = results.size
-        
+
         val trimmedQuery = query.trim().lowercase()
         val tokens = if (trimmedQuery.isEmpty()) emptyList() else trimmedQuery.split(WHITESPACE_REGEX)
 
         val filtered = results.filter { result ->
             val matchesDept = dept == "All" || result.department == dept
             if (!matchesDept) return@filter false
-            
+
             if (tokens.isEmpty()) return@filter true
-            
-            val targetLower = result.title.lowercase() + " " + 
-                              result.patternName.lowercase() + " " + 
+
+            val targetLower = result.title.lowercase() + " " +
+                              result.patternName.lowercase() + " " +
                               result.publishedDate.lowercase()
-            
+
             tokens.all { token -> tokenFuzzyMatch(targetLower, token) }
         }
 
         if (tokens.isEmpty()) {
-            if (sortOrder == SortOrder.NEWEST_FIRST) filtered else filtered.reversed()
+            when (sortOrder) {
+                SortOrder.NEWEST_FIRST -> filtered
+                SortOrder.OLDEST_FIRST -> filtered.reversed()
+                SortOrder.NAME_A_Z -> filtered.sortedBy { it.title.lowercase() }
+                SortOrder.NAME_Z_A -> filtered.sortedByDescending { it.title.lowercase() }
+            }
         } else {
             filtered.sortedByDescending { rankResult(it, tokens) }
         }
@@ -87,8 +97,8 @@ class HomeViewModel @Inject constructor(
         _selectedDepartment.value = dept
     }
 
-    fun toggleSortOrder() {
-        _sortOrder.value = if (_sortOrder.value == SortOrder.NEWEST_FIRST) SortOrder.OLDEST_FIRST else SortOrder.NEWEST_FIRST
+    fun setSortOrder(order: SortOrder) {
+        _sortOrder.value = order
     }
 
     fun refresh() {

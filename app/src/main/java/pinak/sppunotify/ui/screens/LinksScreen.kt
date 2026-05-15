@@ -2,9 +2,9 @@ package pinak.sppunotify.ui.screens
 
 import android.content.Intent
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,6 +29,7 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
         SppuLink("SPPU Main Website", "http://unipune.ac.in/", "Main"),
         SppuLink("SPPU Results Link 1", "http://onlineresults.unipune.ac.in/SPPU", "Results"),
         SppuLink("SPPU Results Link 2", "http://onlineresults.unipune.ac.in/Result/Dashboard/Default", "Results"),
+        SppuLink("Revaluation Results", "https://unipune.ac.in/university_files/Reval_Online_Results_online.htm", "Results"),
         SppuLink("Exam Circulars", "http://collegecirculars.unipune.ac.in/sites/examdocs/Time%20Tables%20APRMAY%202026/Forms/AllItems.aspx", "Exam"),
         SppuLink("Syllabus 2026", "http://collegecirculars.unipune.ac.in/sites/documents/Syllabus%202026/Forms/AllItems.aspx", "Syllabus"),
         SppuLink("Syllabus 2025", "http://collegecirculars.unipune.ac.in/sites/documents/Syllabus%202025/Forms/AllItems.aspx", "Syllabus"),
@@ -68,51 +69,61 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
             )
         }
     ) { padding ->
-        LazyColumn(
-            state = scrollState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            LazyColumn(
+                state = scrollState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp, 
+                    end = 16.dp, 
+                    top = 16.dp, 
+                    bottom = 120.dp // Space for floating nav bar
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "ADVISORY: Use Desktop Site mode on phone if a page doesn't load correctly. PC/Laptop recommended.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                }
+
+                groupedLinks.forEach { (category, categoryLinks) ->
+                    item {
                         Text(
-                            "ADVISORY: Use Desktop Site mode on phone if a page doesn't load correctly. PC/Laptop recommended.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                            text = category,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                         )
                     }
-                }
-            }
-            
-            groupedLinks.forEach { (category, categoryLinks) ->
-                item {
-                    Text(
-                        text = category,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                    )
-                }
-                items(categoryLinks) { link ->
-                    LinkCard(link = link) {
-                        val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
-                        context.startActivity(intent)
+                    items(categoryLinks) { link ->
+                        LinkCard(link = link) {
+                            val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
+                            context.startActivity(intent)
+                        }
                     }
                 }
             }
+
+            LazyScrollbar(
+                listState = scrollState,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            )
         }
     }
 }

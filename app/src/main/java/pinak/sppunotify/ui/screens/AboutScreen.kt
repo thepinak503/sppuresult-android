@@ -86,7 +86,7 @@ fun AboutScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(scrollState)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 120.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Developer Photo
@@ -471,6 +471,22 @@ fun AboutScreen(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // === COPYRIGHT ===
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Copyright,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "2026 Savitribai Phule Pune University",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
         }
     }
 }

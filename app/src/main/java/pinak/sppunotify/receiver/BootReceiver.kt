@@ -9,6 +9,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import pinak.sppunotify.worker.ResultSyncWorker
+import pinak.sppunotify.worker.RevalSyncWorker
 import java.util.concurrent.TimeUnit
 
 class BootReceiver : BroadcastReceiver() {
@@ -22,17 +23,23 @@ class BootReceiver : BroadcastReceiver() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
-        
-        val request = PeriodicWorkRequestBuilder<ResultSyncWorker>(
+
+        val resultRequest = PeriodicWorkRequestBuilder<ResultSyncWorker>(
             15, TimeUnit.MINUTES
-        )
-            .setConstraints(constraints)
-            .build()
-            
+        ).setConstraints(constraints).build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "ResultSyncWork",
             ExistingPeriodicWorkPolicy.KEEP,
-            request
+            resultRequest
+        )
+
+        val revalRequest = PeriodicWorkRequestBuilder<RevalSyncWorker>(
+            60, TimeUnit.MINUTES
+        ).setConstraints(constraints).build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "RevalSyncWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            revalRequest
         )
     }
 }

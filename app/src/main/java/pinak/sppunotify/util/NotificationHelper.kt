@@ -36,10 +36,38 @@ class NotificationHelper(private val context: Context) {
             ).apply {
                 description = "Status of result downloads"
             }
+
+            val revalChannel = NotificationChannel(
+                CHANNEL_REVAL,
+                "Revaluation Updates",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifies when new revaluation courses are added"
+            }
             
             notificationManager.createNotificationChannel(resultChannel)
             notificationManager.createNotificationChannel(downloadChannel)
+            notificationManager.createNotificationChannel(revalChannel)
         }
+    }
+
+    fun showRevalNotification(count: Int) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_REVAL)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("New Revaluation Courses")
+            .setContentText("$count new revaluation course(s) published")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(REVAL_NOTIFICATION_ID, notification)
     }
 
     fun showResultNotification(title: String, message: String) {
@@ -90,7 +118,9 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_RESULTS = "result_notifications"
         const val CHANNEL_DOWNLOADS = "download_notifications"
+        const val CHANNEL_REVAL = "reval_notifications"
         const val GROUP_RESULTS = "pinak.sppunotify.RESULTS"
         const val SUMMARY_ID = 0
+        const val REVAL_NOTIFICATION_ID = 100
     }
 }

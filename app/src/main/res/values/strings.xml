@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">SPPU Result Watch</string>
+    <string name="disclaimer_title">Disclaimer</string>
+    <string name="disclaimer_message">This application is NOT affiliated, associated, authorized, endorsed by, or in any way officially connected with Savitribai Phule Pune University (SPPU), or any of its subsidiaries, departments, or affiliates.\n\nThis is an independent, community-developed open source application.</string>
+    <string name="disclaimer_ok">OK</string>
+    <string name="settings_title">Settings</string>
+    <string name="bg_sync_title">Background Sync</string>
+    <string name="bg_sync_desc">Periodically check for new results</string>
+    <string name="sync_service_channel_name">Background Sync</string>
+    <string name="sync_service_channel_desc">Background result sync service</string>
+    <string name="sync_service_notification_title">Syncing Results</string>
+    <string name="sync_service_notification_text">Checking for new SPPU results</string>
 </resources>
