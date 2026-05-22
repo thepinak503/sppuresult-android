@@ -14,6 +14,32 @@ class RevalRepository @Inject constructor(
     private val scraper: RevaluationScraper,
     private val dao: RevalCourseDao,
 ) {
+    suspend fun getAllCourses(): List<RevalCourse> = withContext(Dispatchers.IO) {
+        dao.getAllCourses().map { entity ->
+            RevalCourse(
+                course = entity.course,
+                subject = entity.subject,
+                eventTarget = entity.eventTarget
+            )
+        }
+    }
+
+    suspend fun fetchAndCacheAllCourses(): List<RevalCourse> = withContext(Dispatchers.IO) {
+        val currentCourses = scraper.scrapeCourses()
+
+        val entities = currentCourses.map { course ->
+            RevalCourseEntity(
+                eventTarget = course.eventTarget,
+                course = course.course,
+                subject = course.subject,
+            )
+        }
+        dao.clearAll()
+        dao.insertCourses(entities)
+
+        currentCourses
+    }
+
     suspend fun checkForNewCourses(): List<RevalCourse> = withContext(Dispatchers.IO) {
         val currentCourses = scraper.scrapeCourses()
         val existingTargets = dao.getAllEventTargets().toSet()

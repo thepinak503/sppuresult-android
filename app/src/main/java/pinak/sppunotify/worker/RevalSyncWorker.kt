@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -33,6 +34,7 @@ class RevalSyncWorker @AssistedInject constructor(
             }
             Result.success()
         } catch (e: Exception) {
+            Log.e("RevalSyncWorker", "Reval sync failed", e)
             if (runAttemptCount < 3) Result.retry() else Result.failure()
         }
     }

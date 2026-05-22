@@ -9,9 +9,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import android.net.Uri
+import pinak.sppunotify.data.local.DownloadedResultEntity
+import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.data.local.ResultEntity
 import pinak.sppunotify.data.remote.ResultScraper
 import pinak.sppunotify.data.repository.ResultRepository
+import pinak.sppunotify.data.repository.VaultRepository
 import javax.inject.Inject
 
 data class ResultViewState(
@@ -23,6 +27,10 @@ data class ResultViewState(
     val error: String? = null,
     val resultBytes: ByteArray? = null,
     val resultMimeType: String = "",
+    val seatNo: String = "",
+    val motherName: String = "",
+    val captchaText: String = "",
+    val activeProfileName: String = "Default"
 )
 
 sealed class ResultViewEvent {
@@ -35,6 +43,8 @@ sealed class ResultViewEvent {
 class ResultViewViewModel @Inject constructor(
     private val scraper: ResultScraper,
     private val repository: ResultRepository,
+    private val vaultRepository: VaultRepository,
+    private val preferenceManager: PreferenceManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -48,7 +58,24 @@ class ResultViewViewModel @Inject constructor(
 
     init {
         loadResult()
+        loadPreferences()
     }
+
+    private fun loadPreferences() {
+        viewModelScope.launch {
+            val prefs = preferenceManager.preferencesFlow.first()
+            val activeProfile = prefs.profiles.find { it.id == prefs.activeProfileId }
+            _state.value = _state.value.copy(
+                seatNo = activeProfile?.seatNo ?: "",
+                motherName = activeProfile?.motherName ?: "",
+                activeProfileName = activeProfile?.name ?: "Default"
+            )
+        }
+    }
+
+    fun updateSeatNo(value: String) { _state.value = _state.value.copy(seatNo = value) }
+    fun updateMotherName(value: String) { _state.value = _state.value.copy(motherName = value) }
+    fun updateCaptchaText(value: String) { _state.value = _state.value.copy(captchaText = value.take(5)) }
 
     private fun loadResult() {
         viewModelScope.launch {
@@ -85,23 +112,19 @@ class ResultViewViewModel @Inject constructor(
         }
     }
 
-    fun submitForm(
-        seatNo: String,
-        motherName: String,
-        captchaText: String,
-    ) {
+    fun submitForm() {
         val s = _state.value
         val result = s.result ?: return
 
-        if (seatNo.isBlank()) {
+        if (s.seatNo.isBlank()) {
             _state.value = s.copy(error = "Please enter Seat No")
             return
         }
-        if (motherName.isBlank()) {
+        if (s.motherName.isBlank()) {
             _state.value = s.copy(error = "Please enter Mother Name")
             return
         }
-        if (captchaText.length != 5) {
+        if (s.captchaText.length != 5) {
             _state.value = s.copy(error = "Captcha text must be 5 characters")
             return
         }
@@ -113,7 +136,7 @@ class ResultViewViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
-            val valid = scraper.validateCaptcha(captchaText, s.orgCaptchaText)
+            val valid = scraper.validateCaptcha(s.captchaText, s.orgCaptchaText)
             if (!valid) {
                 _state.value = _state.value.copy(isLoading = false)
                 _events.emit(ResultViewEvent.ShowErrorDialog(
@@ -127,9 +150,9 @@ class ResultViewViewModel @Inject constructor(
             val submitResult = scraper.submitResult(
                 patternName = result.patternName,
                 patternId = result.patternId,
-                seatNo = seatNo,
-                motherName = motherName,
-                captchaText = captchaText,
+                seatNo = s.seatNo,
+                motherName = s.motherName,
+                captchaText = s.captchaText,
                 orgCaptchaText = s.orgCaptchaText,
                 captchaImageStr = s.captchaImageStr,
             )
@@ -155,6 +178,24 @@ class ResultViewViewModel @Inject constructor(
                     "Failed to fetch result. The SPPU server may be busy or down (502/503). Please try again later."
                 ))
             }
+        }
+    }
+
+    fun onResultSaved(uri: Uri, suggestedName: String) {
+        val s = _state.value
+        val result = s.result ?: return
+        
+        viewModelScope.launch {
+            vaultRepository.saveDownloadedResult(
+                DownloadedResultEntity(
+                    resultId = result.id,
+                    title = result.title,
+                    profileName = s.activeProfileName,
+                    fileName = suggestedName,
+                    filePath = uri.toString(),
+                    mimeType = s.resultMimeType
+                )
+            )
         }
     }
 

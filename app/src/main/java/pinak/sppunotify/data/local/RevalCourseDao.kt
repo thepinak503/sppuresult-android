@@ -10,6 +10,9 @@ interface RevalCourseDao {
     @Query("SELECT eventTarget FROM reval_courses")
     suspend fun getAllEventTargets(): List<String>
 
+    @Query("SELECT * FROM reval_courses ORDER BY course, subject")
+    suspend fun getAllCourses(): List<RevalCourseEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCourses(courses: List<RevalCourseEntity>)
 

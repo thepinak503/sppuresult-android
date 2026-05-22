@@ -7,14 +7,6 @@
 -keep public class * extends android.view.View
 -keep class com.google.dagger.hilt.** { *; }
 
-# Retrofit & OkHttp
--keepattributes Signature, InnerClasses, EnclosingMethod
--keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
--keepattributes RuntimeInvisibleAnnotations, RuntimeInvisibleParameterAnnotations
--dontwarn okhttp3.**
--dontwarn okio.**
--dontwarn retrofit2.**
-
 # Kotlinx Serialization
 -keepattributes *Annotation*, EnclosingMethod, Signature
 -keepclassmembers class * {

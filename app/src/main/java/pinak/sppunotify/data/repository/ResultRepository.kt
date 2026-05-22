@@ -8,8 +8,11 @@ import pinak.sppunotify.data.local.ResultEntity
 import pinak.sppunotify.data.remote.ResultDto
 import pinak.sppunotify.data.remote.ResultScraper
 import pinak.sppunotify.util.DepartmentClassifier
+import pinak.sppunotify.data.remote.ServerStatus
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 @Singleton
 class ResultRepository @Inject constructor(
@@ -22,6 +25,13 @@ class ResultRepository @Inject constructor(
     /**
      * Scrapes results from the SPPU website and saves them to the local database.
      */
+    private val _serverStatus = MutableStateFlow<ServerStatus?>(null)
+    val serverStatus = _serverStatus.asStateFlow()
+
+    suspend fun updateServerStatus() {
+        _serverStatus.value = scraper.checkServerHealth()
+    }
+
     suspend fun fetchResults(): List<ResultDto> = withContext(Dispatchers.IO) {
         val scrapedResults = scraper.scrapeLatestResults()
         

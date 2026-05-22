@@ -2,6 +2,7 @@ package pinak.sppunotify.ui.screens
 
 import android.content.Intent
 import androidx.compose.foundation.clickable
+import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -114,7 +115,7 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
                     items(categoryLinks) { link ->
                         LinkCard(link = link) {
                             val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
-                            context.startActivity(intent)
+                            context.safeStartActivity(intent)
                         }
                     }
                 }

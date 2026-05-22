@@ -55,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,13 +63,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.ui.MainScreen
 import pinak.sppunotify.ui.theme.SPPUResultWatchTheme
 import pinak.sppunotify.ui.theme.ThemeMode
-import java.lang.reflect.Method
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var preferenceManager: PreferenceManager
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -105,29 +112,30 @@ class MainActivity : ComponentActivity() {
             Log.w(TAG, "Failed to set isFrameRatePowerSavingsBalanced: ${e.message}")
         }
 
-        val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-        val themeMode = try {
-            ThemeMode.valueOf(prefs.getString("theme_mode", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name)
-        } catch (_: Exception) {
-            ThemeMode.SYSTEM
+        val themeMode = runBlocking {
+            try {
+                ThemeMode.valueOf(preferenceManager.preferencesFlow.first().themeMode)
+            } catch (_: Exception) {
+                ThemeMode.SYSTEM
+            }
         }
 
         setContent {
             SPPUResultWatchTheme(themeMode = themeMode) {
-                AppSetupFlow(prefs)
+                AppSetupFlow()
             }
         }
     }
 
     @Composable
-    private fun AppSetupFlow(prefs: android.content.SharedPreferences) {
+    private fun AppSetupFlow() {
+        val context = LocalContext.current
         var isOnline by remember { mutableStateOf(isOnline()) }
         var disclaimerAccepted by remember {
-            mutableStateOf(prefs.getBoolean("disclaimer_accepted", false))
+            mutableStateOf(context.getSharedPreferences("app_settings", Context.MODE_PRIVATE).getBoolean("disclaimer_accepted", false))
         }
         var showPermissionDialog by remember { mutableStateOf(false) }
 
-        // Effect to check notification permission after disclaimer is accepted
         LaunchedEffect(disclaimerAccepted) {
             if (disclaimerAccepted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (ContextCompat.checkSelfPermission(
@@ -141,12 +149,10 @@ class MainActivity : ComponentActivity() {
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // Main Content (Always active in background when setup is done)
             if (disclaimerAccepted && isOnline) {
                 MainScreen()
             }
 
-            // No Internet Screen
             if (!isOnline) {
                 SetupPopup(
                     title = "No Internet",
@@ -159,7 +165,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            // Disclaimer Screen
             if (isOnline && !disclaimerAccepted) {
                 SetupPopup(
                     title = "Disclaimer",
@@ -168,7 +173,7 @@ class MainActivity : ComponentActivity() {
                     iconColor = MaterialTheme.colorScheme.error,
                     confirmLabel = "Agree",
                     onConfirm = {
-                        prefs.edit().putBoolean("disclaimer_accepted", true).apply()
+                        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE).edit().putBoolean("disclaimer_accepted", true).apply()
                         disclaimerAccepted = true
                     },
                     cancelLabel = "Exit",
@@ -176,7 +181,6 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            // Notification Permission Popup
             if (isOnline && disclaimerAccepted && showPermissionDialog) {
                 SetupPopup(
                     title = "Notifications Required",

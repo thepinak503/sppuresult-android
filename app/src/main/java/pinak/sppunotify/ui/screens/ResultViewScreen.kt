@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import pinak.sppunotify.util.safeStartActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,8 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.util.FileSaver
 import pinak.sppunotify.util.NotificationHelper
+import kotlinx.coroutines.flow.first
 
 class CreateDynamicDocument : ActivityResultContract<Pair<String, String>, Uri?>() {
     override fun createIntent(context: Context, input: Pair<String, String>): Intent {
@@ -61,10 +64,6 @@ fun ResultViewScreen(
     val notificationHelper = remember { NotificationHelper(context) }
     val scrollState = rememberScrollState()
 
-    var seatNo by remember { mutableStateOf("") }
-    var motherName by remember { mutableStateOf("") }
-    var captchaText by remember { mutableStateOf("") }
-
     var dialogTitle by remember { mutableStateOf("") }
     var dialogMessage by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(value = false) }
@@ -79,17 +78,19 @@ fun ResultViewScreen(
             val success = FileSaver.saveToUri(context, data.bytes, uri)
             notificationHelper.showDownloadNotification(success, data.suggestedName)
             
+            if (success) {
+                viewModel.onResultSaved(uri, data.suggestedName)
+            }
+
             scope.launch {
                 if (success) {
                     snackbarHostState.showSnackbar("Result saved successfully")
-                    try {
-                        val openIntent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, data.mimeType)
-                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                    Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context.startActivity(openIntent)
-                    } catch (_: Exception) {}
+                    val openIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, data.mimeType)
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.safeStartActivity(openIntent)
                 } else {
                     snackbarHostState.showSnackbar("Failed to save result")
                 }
@@ -178,8 +179,8 @@ fun ResultViewScreen(
                 HorizontalDivider()
 
                 OutlinedTextField(
-                    value = seatNo,
-                    onValueChange = { seatNo = it },
+                    value = state.seatNo,
+                    onValueChange = { viewModel.updateSeatNo(it) },
                     label = { Text("Seat No") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -190,8 +191,8 @@ fun ResultViewScreen(
                 )
 
                 OutlinedTextField(
-                    value = motherName,
-                    onValueChange = { motherName = it },
+                    value = state.motherName,
+                    onValueChange = { viewModel.updateMotherName(it) },
                     label = { Text("Mother Name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -262,8 +263,8 @@ fun ResultViewScreen(
                 }
 
                 OutlinedTextField(
-                    value = captchaText,
-                    onValueChange = { captchaText = it.take(5) },
+                    value = state.captchaText,
+                    onValueChange = { viewModel.updateCaptchaText(it) },
                     label = { Text("Captcha Text") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -282,13 +283,7 @@ fun ResultViewScreen(
                 )
 
                 Button(
-                    onClick = {
-                        viewModel.submitForm(
-                            seatNo = seatNo,
-                            motherName = motherName,
-                            captchaText = captchaText,
-                        )
-                    },
+                    onClick = { viewModel.submitForm() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)

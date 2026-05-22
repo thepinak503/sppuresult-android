@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -36,21 +37,27 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
 import pinak.sppunotify.data.local.ResultEntity
 
+import androidx.compose.material.icons.filled.Circle
+import pinak.sppunotify.data.remote.StatusLevel
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onResultClick: (ResultEntity) -> Unit,
+    onSettingsClick: () -> Unit,
     listState: LazyListState,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val results by viewModel.results.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val serverStatus by viewModel.serverStatus.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedDept by viewModel.selectedDepartment.collectAsState()
     val sortOrder by viewModel.sortOrder.collectAsState()
     val totalCount by viewModel.totalCount.collectAsState()
+    val lastUpdated by viewModel.lastUpdated.collectAsState()
     val departments = viewModel.departments
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -81,13 +88,42 @@ fun HomeScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "SPPU Result Watch",
-                        fontWeight = FontWeight.ExtraBold,
-                        style = MaterialTheme.typography.titleLarge,
-                    )
+                    Column {
+                        Text(
+                            text = "SPPU Result Watch",
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        serverStatus?.let { status ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Circle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(8.dp),
+                                    tint = when (status.statusLevel) {
+                                        StatusLevel.HEALTHY -> Color(0xFF4CAF50)
+                                        StatusLevel.SLOW -> Color(0xFFFFC107)
+                                        StatusLevel.DOWN -> Color(0xFFF44336)
+                                    }
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = when (status.statusLevel) {
+                                        StatusLevel.HEALTHY -> "Servers Online"
+                                        StatusLevel.SLOW -> "Servers Slow"
+                                        StatusLevel.DOWN -> "Servers Down"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                 },
                 actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
+                    }
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
@@ -110,7 +146,10 @@ fun HomeScreen(
                         },
                         label = "refresh_rotation"
                     )
-                    IconButton(onClick = { viewModel.refresh() }) {
+                    IconButton(onClick = { 
+                        viewModel.refresh()
+                        viewModel.checkServerStatus() // Manually trigger status check on refresh
+                    }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh",
@@ -322,12 +361,21 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = "$totalCount results",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium,
-                        )
+                        Column {
+                            Text(
+                                text = "$totalCount results",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            if (lastUpdated.isNotEmpty()) {
+                                Text(
+                                    text = "Updated $lastUpdated",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                        }
                         Text(
                             text = sortOrder.label,
                             style = MaterialTheme.typography.labelSmall,

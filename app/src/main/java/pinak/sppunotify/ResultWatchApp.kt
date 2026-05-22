@@ -12,8 +12,15 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.worker.ResultSyncWorker
 import pinak.sppunotify.worker.RevalSyncWorker
+import pinak.sppunotify.worker.WorkManagerHelper
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -25,10 +32,19 @@ class ResultWatchApp : Application(), Configuration.Provider {
         const val CHANNEL_DOWNLOADS = "download_notifications"
         const val CHANNEL_SYNC_SERVICE = "background_sync"
         const val CHANNEL_REVAL = "reval_notifications"
+        const val CHANNEL_EXAM_DATES = "exam_date_notifications"
     }
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var preferenceManager: PreferenceManager
+
+    @Inject
+    lateinit var workManagerHelper: WorkManagerHelper
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -38,7 +54,15 @@ class ResultWatchApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
-        setupRecurringWork()
+        observePreferences()
+    }
+
+    private fun observePreferences() {
+        applicationScope.launch {
+            preferenceManager.preferencesFlow.collectLatest { preferences ->
+                workManagerHelper.updateSyncWork(preferences)
+            }
+        }
     }
 
     private fun createNotificationChannels() {
@@ -93,30 +117,18 @@ class ResultWatchApp : Application(), Configuration.Provider {
                 }
                 notificationManager.createNotificationChannel(revalChannel)
             }
+
+            val existingExamDateChannel = notificationManager.getNotificationChannel(CHANNEL_EXAM_DATES)
+            if (existingExamDateChannel == null) {
+                val examDateChannel = NotificationChannel(
+                    CHANNEL_EXAM_DATES,
+                    "Exam Form Dates",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifies when new exam form dates are updated"
+                }
+                notificationManager.createNotificationChannel(examDateChannel)
+            }
         }
-    }
-
-    private fun setupRecurringWork() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-
-        val resultRequest = PeriodicWorkRequestBuilder<ResultSyncWorker>(
-            15, TimeUnit.MINUTES
-        ).setConstraints(constraints).build()
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "ResultSyncWork",
-            ExistingPeriodicWorkPolicy.KEEP,
-            resultRequest
-        )
-
-        val revalRequest = PeriodicWorkRequestBuilder<RevalSyncWorker>(
-            60, TimeUnit.MINUTES
-        ).setConstraints(constraints).build()
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "RevalSyncWork",
-            ExistingPeriodicWorkPolicy.KEEP,
-            revalRequest
-        )
     }
 }

@@ -3,7 +3,6 @@ package pinak.sppunotify.ui.screens
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
@@ -116,10 +115,4 @@ fun LazyScrollbar(
     }
 }
 
-@Composable
-fun VerticalScrollbar(
-    scrollState: ScrollState,
-    modifier: Modifier = Modifier,
-) {
-    // Intentionally left blank as per user request to hide in settings/about
-}
+

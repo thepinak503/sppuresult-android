@@ -2,6 +2,7 @@ package pinak.sppunotify.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pinak.sppunotify.data.remote.RevalCourse
 import pinak.sppunotify.data.remote.RevaluationScraper
+import androidx.hilt.navigation.compose.hiltViewModel
 
 enum class RevalSort(val label: String) {
     DEFAULT("Default"),
@@ -40,14 +42,13 @@ enum class RevalSort(val label: String) {
 @Composable
 fun RevaluationScreen(
     listState: LazyListState = rememberLazyListState(),
+    viewModel: RevaluationViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val scraper = remember { RevaluationScraper() }
-
-    var courses by remember { mutableStateOf<List<RevalCourse>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMsg by remember { mutableStateOf("") }
+    val courses by viewModel.courses.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMsg by viewModel.errorMsg.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var sortOrder by remember { mutableStateOf(RevalSort.DEFAULT) }
     var searchActive by remember { mutableStateOf(false) }
@@ -63,17 +64,6 @@ fun RevaluationScreen(
             RevalSort.DEFAULT -> list
             RevalSort.NAME_ASC -> list.sortedBy { it.course.lowercase() }
             RevalSort.NAME_DESC -> list.sortedByDescending { it.course.lowercase() }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        try {
-            val result = scraper.scrapeCourses()
-            courses = result
-            isLoading = false
-        } catch (e: Exception) {
-            errorMsg = e.message ?: "Failed to load"
-            isLoading = false
         }
     }
 
@@ -93,18 +83,7 @@ fun RevaluationScreen(
                         },
                         label = "refresh_rotation"
                     )
-                    IconButton(onClick = {
-                        coroutineScope.launch {
-                            isLoading = true
-                            errorMsg = ""
-                            try {
-                                courses = scraper.scrapeCourses()
-                            } catch (e: Exception) {
-                                errorMsg = e.message ?: "Failed to load"
-                            }
-                            isLoading = false
-                        }
-                    }) {
+                    IconButton(onClick = { viewModel.loadCourses() }) {
                         Icon(
                             Icons.Default.Refresh, 
                             contentDescription = "Refresh",
@@ -193,7 +172,7 @@ fun RevaluationScreen(
                                         modifier = Modifier.clickable {
                                             searchActive = false
                                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(revalUrl))
-                                            context.startActivity(intent)
+                                            context.safeStartActivity(intent)
                                         }
                                     )
                                 }
@@ -255,13 +234,7 @@ fun RevaluationScreen(
                                     Spacer(Modifier.height(8.dp))
                                     Text(errorMsg, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(Modifier.height(16.dp))
-                                    Button(onClick = {
-                                        coroutineScope.launch {
-                                            isLoading = true; errorMsg = ""
-                                            try { courses = scraper.scrapeCourses() } catch (e: Exception) { errorMsg = e.message ?: "Failed" }
-                                            isLoading = false
-                                        }
-                                    }) { Text("Retry") }
+                                    Button(onClick = { viewModel.loadCourses() }) { Text("Retry") }
                                 }
                             }
                         }
@@ -291,12 +264,12 @@ fun RevaluationScreen(
                                     items = filteredCourses,
                                     key = { "${it.course}-${it.subject}-${it.eventTarget}" }
                                 ) { course ->
-                                    RevalCourseCard(
-                                        course = course,
-                                        onClick = {
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(revalUrl))
-                                            context.startActivity(intent)
-                                        }
+                                        RevalCourseCard(
+                                            course = course,
+                                            onClick = {
+                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(revalUrl))
+                                                context.safeStartActivity(intent)
+                                            }
                                     )
                                 }
                             }

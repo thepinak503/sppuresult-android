@@ -81,6 +81,19 @@ class ResultScraper @Inject constructor() {
         .timeout(30000)
         .followRedirects(true)
 
+    suspend fun checkServerHealth(): ServerStatus {
+        val startTime = System.currentTimeMillis()
+        return try {
+            val response = Jsoup.connect(BASE_URL)
+                .timeout(5000)
+                .execute()
+            val duration = System.currentTimeMillis() - startTime
+            ServerStatus(isOnline = response.statusCode() == 200, responseTimeMs = duration)
+        } catch (e: Exception) {
+            ServerStatus(isOnline = false, responseTimeMs = -1)
+        }
+    }
+
     suspend fun scrapeLatestResults(): List<ResultDto> = withContext(Dispatchers.IO) {
         val initialSes = newSession()
         val sessionPeriods = fetchSessionPeriods(initialSes)
@@ -186,7 +199,8 @@ class ResultScraper @Inject constructor() {
                 if (img.isNotEmpty() && txt.isNotEmpty()) CaptchaData(img, txt) else null
             } else null
         } catch (e: Exception) {
-            Log.e(TAG, "Captcha fetch failed: ${e.message}", e); null
+            Log.e(TAG, "Captcha fetch failed: ${e.message}", e)
+            null
         }
     }
 
@@ -200,7 +214,10 @@ class ResultScraper @Inject constructor() {
                 .ignoreContentType(true).execute()
             val body = resp.body().trim().removeSurrounding("\"")
             body == "1" || body == "2"
-        } catch (e: Exception) { Log.e(TAG, "VALCHCT failed: ${e.message}", e); false }
+        } catch (e: Exception) {
+            Log.e(TAG, "VALCHCT failed: ${e.message}", e)
+            false
+        }
     }
 
     suspend fun submitResult(
@@ -230,7 +247,8 @@ class ResultScraper @Inject constructor() {
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "submitResult error: ${e.message}", e); null
+            Log.e(TAG, "submitResult error: ${e.message}", e)
+            null
         }
     }
 }

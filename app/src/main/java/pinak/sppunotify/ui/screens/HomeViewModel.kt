@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pinak.sppunotify.data.local.ResultEntity
+import pinak.sppunotify.data.remote.ServerStatus
 import pinak.sppunotify.data.repository.ResultRepository
 import pinak.sppunotify.util.DepartmentClassifier
 import javax.inject.Inject
@@ -44,6 +45,10 @@ class HomeViewModel @Inject constructor(
     private val _totalCount = MutableStateFlow(value = 0)
     val totalCount = _totalCount.asStateFlow()
 
+    private val _lastUpdated = MutableStateFlow("")
+    val lastUpdated = _lastUpdated.asStateFlow()
+    val serverStatus = repository.serverStatus
+
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
@@ -55,8 +60,6 @@ class HomeViewModel @Inject constructor(
         _selectedDepartment,
         _sortOrder,
     ) { results, query, dept, sortOrder ->
-        _totalCount.value = results.size
-
         val trimmedQuery = query.trim().lowercase()
         val tokens = if (trimmedQuery.isEmpty()) emptyList() else trimmedQuery.split(WHITESPACE_REGEX)
 
@@ -73,6 +76,8 @@ class HomeViewModel @Inject constructor(
             tokens.all { token -> tokenFuzzyMatch(targetLower, token) }
         }
 
+        _totalCount.value = filtered.size
+
         if (tokens.isEmpty()) {
             when (sortOrder) {
                 SortOrder.NEWEST_FIRST -> filtered
@@ -87,6 +92,13 @@ class HomeViewModel @Inject constructor(
 
     init {
         refresh()
+        checkServerStatus()
+    }
+
+    fun checkServerStatus() {
+        viewModelScope.launch {
+            repository.updateServerStatus()
+        }
     }
 
     fun onSearchQueryChange(query: String) {
@@ -106,6 +118,7 @@ class HomeViewModel @Inject constructor(
             _isRefreshing.value = true
             try {
                 val newResults = repository.fetchResults()
+                _lastUpdated.value = formatTimestamp(System.currentTimeMillis())
                 if (newResults.isEmpty()) {
                     if (repository.getCachedCount() == 0) {
                         _uiEvent.send(UiEvent.ShowSnackbar("No results loaded. Pull down to retry."))
@@ -160,12 +173,17 @@ class HomeViewModel @Inject constructor(
         return score
     }
 
-    companion object {
-        private val WHITESPACE_REGEX = Regex("\\s+")
-    }
-
     sealed class UiEvent {
         data class ShowSnackbar(val message: String) : UiEvent()
         data class ShowErrorDialog(val title: String, val message: String) : UiEvent()
     }
+
+    companion object {
+        private val WHITESPACE_REGEX = Regex("\\s+")
+    }
+}
+
+private fun formatTimestamp(millis: Long): String {
+    val sdf = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault())
+    return sdf.format(java.util.Date(millis))
 }

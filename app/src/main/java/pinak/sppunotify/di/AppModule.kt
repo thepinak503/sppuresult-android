@@ -7,8 +7,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import pinak.sppunotify.data.local.CircularDao
 import pinak.sppunotify.data.local.RevalCourseDao
 import pinak.sppunotify.data.local.ResultDatabase
+import pinak.sppunotify.data.local.DownloadedResultDao
+import androidx.work.WorkManager
 import javax.inject.Singleton
 
 @Module
@@ -22,11 +25,37 @@ object AppModule {
             context,
             ResultDatabase::class.java,
             "results.db"
-        ).addMigrations(ResultDatabase.MIGRATION_1_2, ResultDatabase.MIGRATION_2_3, ResultDatabase.MIGRATION_3_4)
-            .build()
+        ).addMigrations(
+            ResultDatabase.MIGRATION_1_2,
+            ResultDatabase.MIGRATION_2_3,
+            ResultDatabase.MIGRATION_3_4,
+            ResultDatabase.MIGRATION_4_5,
+            ResultDatabase.MIGRATION_5_6,
+            ResultDatabase.MIGRATION_6_7,
+            ResultDatabase.MIGRATION_7_8,
+            ResultDatabase.MIGRATION_8_9
+        ).build()
     }
 
     @Provides
     @Singleton
     fun provideRevalCourseDao(db: ResultDatabase): RevalCourseDao = db.revalDao
+
+    @Provides
+    @Singleton
+    fun provideDownloadedResultDao(db: ResultDatabase): DownloadedResultDao = db.downloadedDao
+
+    @Provides
+    @Singleton
+    fun provideCircularDao(db: ResultDatabase): CircularDao = db.circularDao
+
+    @Provides
+    @Singleton
+    fun provideExamDateDao(db: ResultDatabase): pinak.sppunotify.data.local.ExamDateDao = db.examDateDao
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(@ApplicationContext context: Context): WorkManager {
+        return WorkManager.getInstance(context)
+    }
 }

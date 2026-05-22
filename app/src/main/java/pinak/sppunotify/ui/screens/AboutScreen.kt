@@ -2,6 +2,7 @@ package pinak.sppunotify.ui.screens
 
 import android.content.Intent
 import androidx.compose.foundation.ScrollState
+import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -125,7 +126,7 @@ fun AboutScreen(
                 TextButton(
                     onClick = {
                         val intent = Intent(Intent.ACTION_VIEW, "https://github.com/thepinak503/".toUri())
-                        context.startActivity(intent)
+                        context.safeStartActivity(intent)
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),

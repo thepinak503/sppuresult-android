@@ -2,6 +2,7 @@ package pinak.sppunotify.ui.screens
 
 import android.content.Intent
 import androidx.compose.animation.*
+import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -62,7 +63,7 @@ fun ResultDetailsScreen(
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, null)
-                            context.startActivity(shareIntent)
+                            context.safeStartActivity(shareIntent)
                         },
                     ) {
                         Icon(Icons.Default.Share, contentDescription = "Share")

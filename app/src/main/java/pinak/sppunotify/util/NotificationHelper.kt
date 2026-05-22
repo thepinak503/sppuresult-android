@@ -44,10 +44,19 @@ class NotificationHelper(private val context: Context) {
             ).apply {
                 description = "Notifies when new revaluation courses are added"
             }
+
+            val examDateChannel = NotificationChannel(
+                CHANNEL_EXAM_DATES,
+                "Exam Form Dates",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifies when new exam form dates are updated"
+            }
             
             notificationManager.createNotificationChannel(resultChannel)
             notificationManager.createNotificationChannel(downloadChannel)
             notificationManager.createNotificationChannel(revalChannel)
+            notificationManager.createNotificationChannel(examDateChannel)
         }
     }
 
@@ -70,7 +79,7 @@ class NotificationHelper(private val context: Context) {
         notificationManager.notify(REVAL_NOTIFICATION_ID, notification)
     }
 
-    fun showResultNotification(title: String, message: String) {
+    fun showResultNotification(results: List<Pair<String, String>>) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -79,28 +88,45 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_RESULTS)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setGroup(GROUP_RESULTS)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
+        if (results.size == 1) {
+            val (title, message) = results.first()
+            val notification = NotificationCompat.Builder(context, CHANNEL_RESULTS)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setGroup(GROUP_RESULTS)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build()
+            notificationManager.notify(message.hashCode(), notification)
+        } else {
+            val summaryText = "${results.size} new result(s) published"
+            results.forEach { (title, message) ->
+                val notification = NotificationCompat.Builder(context, CHANNEL_RESULTS)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setGroup(GROUP_RESULTS)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .build()
+                notificationManager.notify(message.hashCode(), notification)
+            }
 
-        val summary = NotificationCompat.Builder(context, CHANNEL_RESULTS)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("New Results Available")
-            .setContentText("Check out the latest SPPU announcements")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setGroup(GROUP_RESULTS)
-            .setGroupSummary(true)
-            .setAutoCancel(true)
-            .build()
+            val summary = NotificationCompat.Builder(context, CHANNEL_RESULTS)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("New Results Available")
+                .setContentText(summaryText)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setGroup(GROUP_RESULTS)
+                .setGroupSummary(true)
+                .setAutoCancel(true)
+                .build()
 
-        notificationManager.notify(message.hashCode(), notification)
-        notificationManager.notify(SUMMARY_ID, summary)
+            notificationManager.notify(SUMMARY_ID, summary)
+        }
     }
 
     fun showDownloadNotification(success: Boolean, fileName: String) {
@@ -115,12 +141,45 @@ class NotificationHelper(private val context: Context) {
         notificationManager.notify(fileName.hashCode(), notification)
     }
 
+    fun showExamDateNotification(newDates: List<String>) {
+        if (newDates.isEmpty()) return
+        
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val contentText = if (newDates.size == 1) {
+            newDates.first()
+        } else {
+            "${newDates.size} new exam form dates updated"
+        }
+
+        val bigText = newDates.joinToString("\n")
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_EXAM_DATES)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("New Exam Form Dates")
+            .setContentText(contentText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(EXAM_DATE_NOTIFICATION_ID, notification)
+    }
+
     companion object {
         const val CHANNEL_RESULTS = "result_notifications"
         const val CHANNEL_DOWNLOADS = "download_notifications"
         const val CHANNEL_REVAL = "reval_notifications"
+        const val CHANNEL_EXAM_DATES = "exam_date_notifications"
         const val GROUP_RESULTS = "pinak.sppunotify.RESULTS"
         const val SUMMARY_ID = 0
         const val REVAL_NOTIFICATION_ID = 100
+        const val EXAM_DATE_NOTIFICATION_ID = 101
     }
 }
