@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
-    kotlin("plugin.serialization") version "2.1.10"
+    //alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -84,6 +84,7 @@ dependencies {
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.foundation)
@@ -115,10 +116,12 @@ dependencies {
 
     // Security
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.biometric)
     
     // Scraper
     implementation(libs.jsoup)
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 
     // Testing
     testImplementation(libs.junit)

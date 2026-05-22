@@ -85,11 +85,19 @@ class ResultScraper @Inject constructor() {
         val startTime = System.currentTimeMillis()
         return try {
             val response = Jsoup.connect(BASE_URL)
-                .timeout(5000)
+                .userAgent(userAgent)
+                .timeout(10000)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Accept-Language", "en-US,en;q=0.5")
+                .ignoreHttpErrors(true)
+                .followRedirects(true)
                 .execute()
+            
             val duration = System.currentTimeMillis() - startTime
-            ServerStatus(isOnline = response.statusCode() == 200, responseTimeMs = duration)
+            val isOnline = response.statusCode() in 200..399
+            ServerStatus(isOnline = isOnline, responseTimeMs = duration)
         } catch (e: Exception) {
+            Log.e(TAG, "Health check failed: ${e.message}")
             ServerStatus(isOnline = false, responseTimeMs = -1)
         }
     }

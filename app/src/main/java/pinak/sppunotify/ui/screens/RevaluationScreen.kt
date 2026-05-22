@@ -13,10 +13,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,8 +29,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pinak.sppunotify.data.remote.RevalCourse
-import pinak.sppunotify.data.remote.RevaluationScraper
 import androidx.hilt.navigation.compose.hiltViewModel
+import pinak.sppunotify.ui.components.AppEmptyState
+import pinak.sppunotify.ui.components.AppSearchBar
+import pinak.sppunotify.ui.components.AppTopBar
 
 enum class RevalSort(val label: String) {
     DEFAULT("Default"),
@@ -43,9 +45,9 @@ enum class RevalSort(val label: String) {
 fun RevaluationScreen(
     listState: LazyListState = rememberLazyListState(),
     viewModel: RevaluationViewModel = hiltViewModel(),
+    onMenuClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val courses by viewModel.courses.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMsg by viewModel.errorMsg.collectAsState()
@@ -61,31 +63,29 @@ fun RevaluationScreen(
             list = list.filter { it.course.lowercase().contains(q) || it.subject.lowercase().contains(q) }
         }
         when (sortOrder) {
-            RevalSort.DEFAULT -> list
-            RevalSort.NAME_ASC -> list.sortedBy { it.course.lowercase() }
+            RevalSort.DEFAULT   -> list
+            RevalSort.NAME_ASC  -> list.sortedBy { it.course.lowercase() }
             RevalSort.NAME_DESC -> list.sortedByDescending { it.course.lowercase() }
         }
     }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text("Revaluation Results", fontWeight = FontWeight.ExtraBold)
-                },
+            AppTopBar(
+                title = "Revaluation",
+                navIcon = Icons.Default.Menu,
+                onNavClick = onMenuClick,
                 actions = {
                     val rotation by animateFloatAsState(
                         targetValue = if (isLoading) 360f else 0f,
                         animationSpec = if (isLoading) {
                             infiniteRepeatable(tween(1000, easing = LinearEasing))
-                        } else {
-                            tween(0)
-                        },
+                        } else { tween(0) },
                         label = "refresh_rotation"
                     )
                     IconButton(onClick = { viewModel.loadCourses() }) {
                         Icon(
-                            Icons.Default.Refresh, 
+                            Icons.Default.Refresh,
                             contentDescription = "Refresh",
                             modifier = Modifier.graphicsLayer { rotationZ = rotation }
                         )
@@ -97,85 +97,59 @@ fun RevaluationScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            AppSearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                expanded = searchActive,
+                onExpandedChange = { searchActive = it },
+                placeholder = "Search revaluation…",
             ) {
-                SearchBar(
-                    inputField = {
-                        SearchBarDefaults.InputField(
-                            query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            onSearch = { searchActive = false },
-                            expanded = searchActive,
-                            onExpandedChange = { searchActive = it },
-                            placeholder = { Text("Search revaluation...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { searchQuery = "" }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear")
-                                    }
-                                }
-                            }
-                        )
-                    },
-                    expanded = searchActive,
-                    onExpandedChange = { searchActive = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = if (searchActive) RoundedCornerShape(0.dp) else RoundedCornerShape(32.dp),
-                    colors = SearchBarDefaults.colors(
-                        containerColor = if (searchActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
+                    Text(
+                        "Quick Tags",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        listOf("FE", "SE", "TE", "BE", "MBA", "MCA", "B.Sc", "B.Com").forEach { tag ->
+                            SuggestionChip(
+                                onClick = {
+                                    searchQuery = tag
+                                    searchActive = false
+                                },
+                                label = { Text(tag) },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    }
+
+                    if (filteredCourses.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            "Quick Tags",
+                            "Matches",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 12.dp)
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf("FE", "SE", "TE", "BE", "MBA", "MCA", "B.Sc", "B.Com").forEach { tag ->
-                                SuggestionChip(
-                                    onClick = {
-                                        searchQuery = tag
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            items(filteredCourses.take(15)) { course ->
+                                ListItem(
+                                    headlineContent = { Text(course.course, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                    supportingContent = { Text(course.subject, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                    modifier = Modifier.clickable {
                                         searchActive = false
-                                    },
-                                    label = { Text(tag) },
-                                    shape = RoundedCornerShape(12.dp)
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(revalUrl))
+                                        context.safeStartActivity(intent)
+                                    }
                                 )
-                            }
-                        }
-
-                        if (filteredCourses.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Text(
-                                "Matches",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                items(filteredCourses.take(15)) { course ->
-                                    ListItem(
-                                        headlineContent = { Text(course.course, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                                        supportingContent = { Text(course.subject, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                                        modifier = Modifier.clickable {
-                                            searchActive = false
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(revalUrl))
-                                            context.safeStartActivity(intent)
-                                        }
-                                    )
-                                }
                             }
                         }
                     }
@@ -230,22 +204,23 @@ fun RevaluationScreen(
                         errorMsg.isNotEmpty() -> {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Failed to load", style = MaterialTheme.typography.titleMedium)
+                                    AppEmptyState(
+                                        icon = Icons.AutoMirrored.Filled.List,
+                                        message = "Failed to load",
+                                        subMessage = errorMsg
+                                    )
                                     Spacer(Modifier.height(8.dp))
-                                    Text(errorMsg, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Spacer(Modifier.height(16.dp))
                                     Button(onClick = { viewModel.loadCourses() }) { Text("Retry") }
                                 }
                             }
                         }
                         filteredCourses.isEmpty() -> {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(if (searchQuery.isNotEmpty()) "No matches" else "No revaluation courses",
-                                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.outline)
-                                    Spacer(Modifier.height(8.dp))
-                                    Text("Try clearing filters", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                                }
+                                AppEmptyState(
+                                    icon = Icons.AutoMirrored.Filled.List,
+                                    message = if (searchQuery.isNotEmpty()) "No matches for \"$searchQuery\"" else "No revaluation courses",
+                                    subMessage = if (searchQuery.isNotEmpty()) "Try a different keyword" else "Pull down to refresh"
+                                )
                             }
                         }
                         else -> {
@@ -264,12 +239,12 @@ fun RevaluationScreen(
                                     items = filteredCourses,
                                     key = { "${it.course}-${it.subject}-${it.eventTarget}" }
                                 ) { course ->
-                                        RevalCourseCard(
-                                            course = course,
-                                            onClick = {
-                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(revalUrl))
-                                                context.safeStartActivity(intent)
-                                            }
+                                    RevalCourseCard(
+                                        course = course,
+                                        onClick = {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(revalUrl))
+                                            context.safeStartActivity(intent)
+                                        }
                                     )
                                 }
                             }
@@ -310,7 +285,7 @@ fun RevalCourseCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         ),
     ) {
         Row(

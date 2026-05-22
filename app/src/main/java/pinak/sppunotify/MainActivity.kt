@@ -13,9 +13,9 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -72,7 +72,7 @@ import pinak.sppunotify.ui.theme.ThemeMode
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var preferenceManager: PreferenceManager
@@ -132,7 +132,7 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current
         var isOnline by remember { mutableStateOf(isOnline()) }
         var disclaimerAccepted by remember {
-            mutableStateOf(context.getSharedPreferences("app_settings", Context.MODE_PRIVATE).getBoolean("disclaimer_accepted", false))
+            mutableStateOf(context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE).getBoolean("disclaimer_accepted", false))
         }
         var showPermissionDialog by remember { mutableStateOf(false) }
 

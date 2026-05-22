@@ -10,7 +10,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,6 +33,7 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
         SppuLink("SPPU Results Link 1", "http://onlineresults.unipune.ac.in/SPPU", "Results"),
         SppuLink("SPPU Results Link 2", "http://onlineresults.unipune.ac.in/Result/Dashboard/Default", "Results"),
         SppuLink("Revaluation Results", "https://unipune.ac.in/university_files/Reval_Online_Results_online.htm", "Results"),
+        SppuLink("Exam Form Dates", "https://examform.unipune.ac.in/Support/StuExDates.aspx", "Exam"),
         SppuLink("Exam Circulars", "http://collegecirculars.unipune.ac.in/sites/examdocs/Time%20Tables%20APRMAY%202026/Forms/AllItems.aspx", "Exam"),
         SppuLink("Syllabus 2026", "http://collegecirculars.unipune.ac.in/sites/documents/Syllabus%202026/Forms/AllItems.aspx", "Syllabus"),
         SppuLink("Syllabus 2025", "http://collegecirculars.unipune.ac.in/sites/documents/Syllabus%202025/Forms/AllItems.aspx", "Syllabus"),
@@ -58,10 +61,14 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Important Links", fontWeight = FontWeight.Bold) },
+            CenterAlignedTopAppBar(
+                title = { Text("Important Links", fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
-                    if (!isTopLevel) {
+                    if (isTopLevel) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        }
+                    } else {
                         IconButton(onClick = onBackClick) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
@@ -136,7 +143,7 @@ fun LinkCard(link: SppuLink, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
         tonalElevation = 2.dp
     ) {
         Row(
@@ -148,6 +155,13 @@ fun LinkCard(link: SppuLink, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = "Open link",
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

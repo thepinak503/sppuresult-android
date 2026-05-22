@@ -16,7 +16,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -39,13 +40,15 @@ import pinak.sppunotify.data.local.ResultEntity
 
 import androidx.compose.material.icons.filled.Circle
 import pinak.sppunotify.data.remote.StatusLevel
+import pinak.sppunotify.ui.components.AppSearchBar
+import pinak.sppunotify.ui.components.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onResultClick: (ResultEntity) -> Unit,
-    onSettingsClick: () -> Unit,
+    onMenuClick: () -> Unit,
     listState: LazyListState,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -86,11 +89,11 @@ fun HomeScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Column {
+            AppTopBar(
+                titleContent = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "SPPU Result Watch",
+                            text = "Results",
                             fontWeight = FontWeight.ExtraBold,
                             style = MaterialTheme.typography.titleLarge,
                         )
@@ -109,9 +112,9 @@ fun HomeScreen(
                                 Spacer(Modifier.width(4.dp))
                                 Text(
                                     text = when (status.statusLevel) {
-                                        StatusLevel.HEALTHY -> "Servers Online"
-                                        StatusLevel.SLOW -> "Servers Slow"
-                                        StatusLevel.DOWN -> "Servers Down"
+                                        StatusLevel.HEALTHY -> "Online (${status.responseTimeMs}ms)"
+                                        StatusLevel.SLOW -> "Slow (${status.responseTimeMs}ms)"
+                                        StatusLevel.DOWN -> "Down"
                                     },
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -120,10 +123,9 @@ fun HomeScreen(
                         }
                     }
                 },
+                navIcon = Icons.Default.Menu,
+                onNavClick = onMenuClick,
                 actions = {
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
-                    }
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
@@ -216,115 +218,95 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            AppSearchBar(
+                query = searchQuery,
+                onQueryChange = { viewModel.onSearchQueryChange(it) },
+                expanded = searchActive,
+                onExpandedChange = { searchActive = it },
+                placeholder = "Search results...",
             ) {
-                SearchBar(
-                    inputField = {
-                        SearchBarDefaults.InputField(
-                            query = searchQuery,
-                            onQueryChange = { viewModel.onSearchQueryChange(it) },
-                            onSearch = { searchActive = false },
-                            expanded = searchActive,
-                            onExpandedChange = { searchActive = it },
-                            placeholder = { Text("Search results...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear")
-                                    }
-                                }
-                            }
-                        )
-                    },
-                    expanded = searchActive,
-                    onExpandedChange = { searchActive = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = if (searchActive) RoundedCornerShape(0.dp) else RoundedCornerShape(32.dp),
-                    colors = SearchBarDefaults.colors(
-                        containerColor = if (searchActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    )
+                // --- RECOMMENDATIONS / RECENT SEARCHES ---
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
                 ) {
-                    // --- RECOMMENDATIONS / RECENT SEARCHES ---
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn() + slideInVertically { it / 2 },
+                        label = "Recs"
                     ) {
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn() + slideInVertically { it / 2 },
-                            label = "Recs"
-                        ) {
-                            Column {
-                                Text(
-                                    "Recommended Departments",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 12.dp)
-                                )
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    listOf("FE", "SE", "TE", "BE", "MBA", "MCA", "B.Sc", "B.Com").forEach { dept ->
-                                        SuggestionChip(
-                                            onClick = {
-                                                viewModel.onDepartmentSelected(dept)
-                                                searchActive = false
-                                            },
-                                            label = { Text(dept) },
-                                            shape = RoundedCornerShape(12.dp)
-                                        )
-                                    }
+                        Column {
+                            Text(
+                                "Recommended Departments",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf("FE", "SE", "TE", "BE", "MBA", "MCA", "B.Sc", "B.Com").forEach { dept ->
+                                    SuggestionChip(
+                                        onClick = {
+                                            viewModel.onDepartmentSelected(dept)
+                                            searchActive = false
+                                        },
+                                        label = { Text(dept) },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
                                 }
                             }
                         }
-                        
-                        if (results.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Text(
-                                "Instant Results",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                itemsIndexed(results.take(15)) { index, res ->
-                                    AnimatedVisibility(
-                                        visible = true,
-                                        enter = slideInVertically(
-                                            initialOffsetY = { it },
-                                            animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                                stiffness = Spring.StiffnessLow
-                                            )
-                                        ) + fadeIn(
-                                            animationSpec = tween(
-                                                durationMillis = 300,
-                                                delayMillis = index * 50
-                                            )
-                                        ),
-                                        modifier = Modifier.padding(bottom = 4.dp)
-                                    ) {
-                                        ListItem(
-                                            headlineContent = { Text(res.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                                            supportingContent = { Text(res.publishedDate) },
-                                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .clickable {
-                                                    searchActive = false
-                                                    onResultClick(res)
-                                                }
+                    }
+
+                    if (results.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            "Instant Results",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(results.take(15)) { index, res ->
+                                AnimatedVisibility(
+                                    visible = true,
+                                    enter = slideInVertically(
+                                        initialOffsetY = { it },
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioLowBouncy,
+                                            stiffness = Spring.StiffnessLow
                                         )
-                                    }
+                                    ) + fadeIn(
+                                        animationSpec = tween(
+                                            durationMillis = 300,
+                                            delayMillis = index * 50
+                                        )
+                                    ),
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                ) {
+                                    ListItem(
+                                        headlineContent = {
+                                            Text(
+                                                res.title,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        },
+                                        supportingContent = { Text(res.publishedDate) },
+                                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                searchActive = false
+                                                onResultClick(res)
+                                            }
+                                    )
                                 }
                             }
                         }
@@ -404,7 +386,10 @@ fun HomeScreen(
                                     )
                                 }
                             } else {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     EmptyState(
                                         message = when {
                                             searchQuery.isNotEmpty() -> "No results matching \"$searchQuery\""
@@ -450,20 +435,20 @@ fun HomeScreen(
                 }
             }
         }
-    }
 
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(dialogTitle, fontWeight = FontWeight.Bold) },
-            text = { Text(dialogMessage) },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("OK", fontWeight = FontWeight.Bold)
-                }
-            },
-            shape = RoundedCornerShape(24.dp),
-        )
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text(dialogTitle, fontWeight = FontWeight.Bold) },
+                text = { Text(dialogMessage) },
+                confirmButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("OK", fontWeight = FontWeight.Bold)
+                    }
+                },
+                shape = RoundedCornerShape(24.dp),
+            )
+        }
     }
 }
 
@@ -484,7 +469,10 @@ fun ResultCard(
     var isPressed by remember { mutableStateOf(value = false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
         label = "scale"
     )
 
@@ -498,7 +486,7 @@ fun ResultCard(
                     animatedVisibilityScope = animatedVisibilityScope,
                     enter = fadeIn(),
                     exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                 )
                 .clickable {
                     isPressed = true

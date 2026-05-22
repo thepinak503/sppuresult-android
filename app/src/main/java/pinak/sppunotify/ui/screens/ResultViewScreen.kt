@@ -131,7 +131,7 @@ fun ResultViewScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("View Result", fontWeight = FontWeight.Bold) },
+                title = { Text("View Result", fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

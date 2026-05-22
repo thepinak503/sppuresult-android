@@ -8,7 +8,7 @@ data class ServerStatus(
     val statusLevel: StatusLevel
         get() = when {
             !isOnline -> StatusLevel.DOWN
-            responseTimeMs > 2000 -> StatusLevel.SLOW
+            responseTimeMs > 4000 -> StatusLevel.SLOW
             else -> StatusLevel.HEALTHY
         }
 }

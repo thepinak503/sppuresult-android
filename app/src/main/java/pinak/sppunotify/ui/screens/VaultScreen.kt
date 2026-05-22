@@ -2,6 +2,8 @@ package pinak.sppunotify.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.fragment.app.FragmentActivity
+import pinak.sppunotify.util.BiometricHelper
 import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
@@ -20,10 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import pinak.sppunotify.data.local.DownloadedResultEntity
+import pinak.sppunotify.ui.components.AppEmptyState
+import pinak.sppunotify.ui.components.AppTopBar
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,27 +38,72 @@ import java.util.*
 @Composable
 fun VaultScreen(
     viewModel: VaultViewModel = hiltViewModel(),
+    onMenuClick: () -> Unit,
     onViewPdf: (filePath: String, title: String) -> Unit = { _, _ -> }
 ) {
     val results by viewModel.downloadedResults.collectAsState()
     val context = LocalContext.current
+    val activity = context as? FragmentActivity
     var deleteTarget by remember { mutableStateOf<DownloadedResultEntity?>(null) }
+    
+    var isAuthorized by remember { mutableStateOf(false) }
+    val biometricHelper = remember { BiometricHelper(context) }
+
+    LaunchedEffect(Unit) {
+        if ((biometricHelper.canAuthenticate() && activity != null)) {
+            biometricHelper.authenticate(
+                activity = activity,
+                title = "Vault Authentication",
+                subtitle = "Authenticate to access saved marksheets",
+                onSuccess = { isAuthorized = true },
+                onError = { }
+            )
+        } else {
+            // If device has no biometric or PIN set up, allow access (or you could require a fallback)
+            isAuthorized = true
+        }
+    }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Marksheet Vault", fontWeight = FontWeight.ExtraBold) }
+            AppTopBar(
+                title = "Vault",
+                navIcon = Icons.Default.Menu,
+                onNavClick = onMenuClick
             )
         }
     ) { padding ->
-        if (results.isEmpty()) {
+        if (!isAuthorized) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+                    Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(16.dp))
-                    Text("No marksheets saved yet.", color = MaterialTheme.colorScheme.outline)
-                    Text("Downloaded results will appear here.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                    Text("Vault is Locked", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Please authenticate to view your downloaded results.", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(24.dp))
+                    Button(onClick = {
+                        if (activity != null) {
+                            biometricHelper.authenticate(
+                                activity = activity,
+                                title = "Vault Authentication",
+                                subtitle = "Authenticate to access saved marksheets",
+                                onSuccess = { isAuthorized = true },
+                                onError = { }
+                            )
+                        }
+                    }) {
+                        Text("Unlock Vault")
+                    }
                 }
+            }
+        } else if (results.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                AppEmptyState(
+                    icon = Icons.Default.PictureAsPdf,
+                    message = "No marksheets saved yet",
+                    subMessage = "Downloaded results will appear here"
+                )
             }
         } else {
             LazyColumn(

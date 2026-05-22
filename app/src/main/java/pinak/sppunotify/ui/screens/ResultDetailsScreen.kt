@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,7 +122,7 @@ fun ResultDetailsScreen(
                                     animatedVisibilityScope = animatedVisibilityScope,
                                     enter = fadeIn(),
                                     exit = fadeOut(),
-                                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                                 )
                         ) {
                             Column(modifier = Modifier.padding(24.dp)) {

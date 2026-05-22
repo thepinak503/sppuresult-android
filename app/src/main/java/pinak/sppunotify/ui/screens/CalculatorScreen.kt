@@ -8,7 +8,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
+import pinak.sppunotify.ui.components.AppTopBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +29,7 @@ enum class CalculationPattern(val label: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalculatorScreen() {
+fun CalculatorScreen(onMenuClick: () -> Unit) {
     var gpaText by remember { mutableStateOf("") }
     var selectedPattern by remember { mutableStateOf(CalculationPattern.STANDARD) }
     var expanded by remember { mutableStateOf(false) }
@@ -72,8 +74,10 @@ fun CalculatorScreen() {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("SPPU Pointer Pro", fontWeight = FontWeight.ExtraBold) }
+            AppTopBar(
+                title = "Calculator",
+                navIcon = Icons.Default.Menu,
+                onNavClick = onMenuClick
             )
         }
     ) { padding ->

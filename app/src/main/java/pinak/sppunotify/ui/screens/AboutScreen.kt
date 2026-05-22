@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Copyright
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.NotInterested
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -34,12 +35,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import pinak.sppunotify.ui.components.AppTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,12 +61,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
     scrollState: ScrollState = rememberScrollState(),
+    onMenuClick: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -72,13 +76,10 @@ fun AboutScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "About",
-                        fontWeight = FontWeight.ExtraBold,
-                    )
-                },
+            AppTopBar(
+                title = "About",
+                navIcon = Icons.Default.Menu,
+                onNavClick = onMenuClick
             )
         }
     ) { padding ->
@@ -207,11 +208,10 @@ fun AboutScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // === NON-AFFILIATION NOTICE ===
-            OutlinedCard(
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.08f),
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.12f),
                 ),
-                border = CardDefaults.outlinedCardBorder().copy(width = 1.5.dp),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -247,9 +247,9 @@ fun AboutScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // === DATA PRIVACY ===
-            OutlinedCard(
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.15f),
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 ),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -440,7 +440,10 @@ fun AboutScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // === LICENSE / FOSS ===
-            OutlinedCard(
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                ),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {

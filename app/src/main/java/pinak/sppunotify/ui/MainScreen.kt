@@ -2,7 +2,6 @@ package pinak.sppunotify.ui
 
 import android.app.Activity
 import android.content.Intent
-import android.content.res.Configuration
 import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -14,32 +13,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.FolderZip
-import androidx.compose.material.icons.outlined.FolderZip
-import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.outlined.Calculate
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import android.net.Uri
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,6 +35,7 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -67,7 +56,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector,
     object Vault : Screen("vault", "Vault", Icons.Outlined.FolderZip, Icons.Filled.FolderZip)
     object Links : Screen("links", "Links", Icons.Outlined.Public, Icons.Filled.Public)
     object Settings : Screen("settings", "Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
-    object About : Screen("about", "About", Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)
+    object About : Screen("about", "About", Icons.Outlined.Info, Icons.Filled.Info)
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
@@ -75,12 +64,19 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector,
 fun MainScreen() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as Activity)
-    val useRail = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
 
-    val items = listOf(Screen.Home, Screen.Revaluation, Screen.Circulars, Screen.ExamDates, Screen.Calculator, Screen.Vault, Screen.Links, Screen.About)
-    val barItems = listOf(Screen.Home, Screen.Revaluation, Screen.Circulars, Screen.ExamDates, Screen.Calculator, Screen.Vault, Screen.Links)
-
+    val items = listOf(
+        Screen.Home,
+        Screen.Revaluation,
+        Screen.Circulars,
+        Screen.ExamDates,
+        Screen.Calculator,
+        Screen.Vault,
+        Screen.Links,
+        Screen.Settings,
+        Screen.About
+    )
+    
     val homeListState = rememberLazyListState()
     val linksScrollState = rememberLazyListState()
     val revalScrollState = rememberLazyListState()
@@ -96,174 +92,122 @@ fun MainScreen() {
     val currentDestination = navBackStackEntry?.destination
     val showNav = currentDestination?.route in items.map { it.route }
 
-    Scaffold { contentPadding ->
-        if (useRail) {
-            // Tablet/Landscape/Freeform: rail and content in a Row
-            Row(modifier = Modifier.fillMaxSize()) {
-                AnimatedVisibility(
-                    visible = showNav,
-                    enter = slideInHorizontally { -it } + fadeIn(),
-                    exit = slideOutHorizontally { -it } + fadeOut(),
-                    modifier = Modifier.fillMaxHeight()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .windowInsetsPadding(WindowInsets.displayCutout)
-                            .padding(start = 20.dp, top = 20.dp, bottom = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Surface(
-                            modifier = Modifier.width(72.dp).weight(1f),
-                            shape = RoundedCornerShape(36.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-                            tonalElevation = 8.dp
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize().padding(vertical = 12.dp),
-                                verticalArrangement = Arrangement.SpaceEvenly,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                barItems.forEach { screen ->
-                                    val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                                    val iconScale by animateFloatAsState(
-                                        targetValue = if (selected) 1.25f else 1f,
-                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                                        label = "iconScale"
-                                    )
-                                    TooltipBox(
-                                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                                        tooltip = { PlainTooltip { Text(screen.label) } },
-                                        state = rememberTooltipState()
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(54.dp)
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .background(
-                                                    if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                                    else Color.Transparent
-                                                )
-                                                .clickable {
-                                                    navigateToTab(navController, screen, lastSelectedRoute, coroutineScope, homeListState, linksScrollState, revalScrollState, circularsScrollState, examDatesScrollState, settingsScrollState, aboutScrollState)
-                                                    lastSelectedRoute = screen.route
-                                                },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = if (selected) screen.selectedIcon else screen.icon,
-                                                contentDescription = screen.label,
-                                                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                                modifier = Modifier
-                                                    .size(26.dp)
-                                                    .graphicsLayer(scaleX = iconScale, scaleY = iconScale)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
-                        val about = Screen.About
-                        val isAboutSelected = currentDestination?.hierarchy?.any { it.route == about.route } == true
-                        val aboutScale by animateFloatAsState(
-                            targetValue = if (isAboutSelected) 1.15f else 1f,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                            label = "aboutScale"
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = showNav,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(320.dp),
+                drawerShape = RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp),
+                drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                // Gradient header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    MaterialTheme.colorScheme.surfaceContainerLow
+                                )
+                            )
                         )
-                        TooltipBox(
-                            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                            tooltip = { PlainTooltip { Text(about.label) } },
-                            state = rememberTooltipState()
+                        .padding(horizontal = 24.dp, vertical = 28.dp)
+                ) {
+                    Column {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Surface(
-                                modifier = Modifier
-                                    .size(68.dp)
-                                    .clip(RoundedCornerShape(22.dp))
-                                    .clickable {
-                                        navigateToTab(navController, about, lastSelectedRoute, coroutineScope, homeListState, linksScrollState, revalScrollState, circularsScrollState, examDatesScrollState, settingsScrollState, aboutScrollState)
-                                        lastSelectedRoute = about.route
-                                    },
-                                shape = RoundedCornerShape(22.dp),
-                                color = if (isAboutSelected) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                                tonalElevation = if (isAboutSelected) 4.dp else 12.dp
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = if (isAboutSelected) about.selectedIcon else about.icon,
-                                        contentDescription = about.label,
-                                        tint = if (isAboutSelected) MaterialTheme.colorScheme.onPrimary
-                                               else MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier
-                                            .size(30.dp)
-                                            .graphicsLayer(scaleX = aboutScale, scaleY = aboutScale)
-                                    )
-                                }
-                            }
+                            Icon(
+                                Icons.Default.School,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(14.dp))
+                        Text(
+                            "SPPU Result Watch",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                "v1.0.0",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
-
-                Box(modifier = Modifier.weight(1f).padding(contentPadding)) {
-                    SharedTransitionLayout {
-                        NavHostContent(
-                            sharedTransitionScope = this,
-                            navController = navController,
-                            context = context,
-                            items = items,
-                            homeListState = homeListState,
-                            linksScrollState = linksScrollState,
-                            revalScrollState = revalScrollState,
-                            circularsScrollState = circularsScrollState,
-                            examDatesScrollState = examDatesScrollState,
-                            settingsScrollState = settingsScrollState,
-                            aboutScrollState = aboutScrollState,
-                            onNavigateToSettings = { navController.navigate("settings") },
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 12.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Spacer(Modifier.height(8.dp))
+                    items.forEach { screen ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                        NavigationDrawerItem(
+                            label = { Text(text = screen.label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium) },
+                            selected = selected,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navigateToTab(navController, screen, lastSelectedRoute, coroutineScope, homeListState, linksScrollState, revalScrollState, circularsScrollState, examDatesScrollState, settingsScrollState, aboutScrollState)
+                                lastSelectedRoute = screen.route
+                            },
+                            icon = { Icon(if (selected) screen.selectedIcon else screen.icon, contentDescription = null) },
+                            shape = RoundedCornerShape(20.dp),
+                            colors = NavigationDrawerItemDefaults.colors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            modifier = Modifier.padding(vertical = 2.dp)
                         )
                     }
+                    Spacer(Modifier.height(24.dp))
                 }
             }
-        } else {
-            // Portrait: content + bottom bar
-            Box(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
-                    SharedTransitionLayout {
-                        NavHostContent(
-                            sharedTransitionScope = this,
-                            navController = navController,
-                            context = context,
-                            items = items,
-                            homeListState = homeListState,
-                            linksScrollState = linksScrollState,
-                            revalScrollState = revalScrollState,
-                            circularsScrollState = circularsScrollState,
-                            examDatesScrollState = examDatesScrollState,
-                            settingsScrollState = settingsScrollState,
-                            aboutScrollState = aboutScrollState,
-                            onNavigateToSettings = { navController.navigate("settings") },
-                        )
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = showNav,
-                    enter = slideInVertically { it } + fadeIn(),
-                    exit = slideOutVertically { it } + fadeOut(),
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                ) {
-                    BottomBar(
-                        barItems = barItems,
-                        aboutScreen = Screen.About,
-                        currentDestination = currentDestination,
-                        onItemClick = { screen ->
-                            navigateToTab(navController, screen, lastSelectedRoute, coroutineScope, homeListState, linksScrollState, revalScrollState, circularsScrollState, examDatesScrollState, settingsScrollState, aboutScrollState)
-                            lastSelectedRoute = screen.route
-                        },
-                    )
-                }
+        }
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            SharedTransitionLayout {
+                NavHostContent(
+                    sharedTransitionScope = this,
+                    navController = navController,
+                    context = context,
+                    items = items,
+                    homeListState = homeListState,
+                    linksScrollState = linksScrollState,
+                    revalScrollState = revalScrollState,
+                    circularsScrollState = circularsScrollState,
+                    examDatesScrollState = examDatesScrollState,
+                    settingsScrollState = settingsScrollState,
+                    aboutScrollState = aboutScrollState,
+                    onMenuClick = { coroutineScope.launch { drawerState.open() } }
+                )
             }
         }
     }
@@ -283,75 +227,91 @@ private fun NavHostContent(
     examDatesScrollState: LazyListState,
     settingsScrollState: androidx.compose.foundation.ScrollState,
     aboutScrollState: androidx.compose.foundation.ScrollState,
-    onNavigateToSettings: () -> Unit,
+    onMenuClick: () -> Unit,
 ) {
     NavHost(
         navController = navController,
         startDestination = Screen.Home.route,
         modifier = Modifier.fillMaxSize(),
+        // Tab → Tab: slide direction based on index, fast spring
         enterTransition = {
             val initialRoute = initialState.destination.route ?: ""
-            val targetRoute = targetState.destination.route ?: ""
-            val tabRoutes = items.map { it.route }
+            val targetRoute  = targetState.destination.route ?: ""
+            val tabRoutes    = items.map { it.route }
             if (initialRoute in tabRoutes && targetRoute in tabRoutes) {
-                val initialIndex = tabRoutes.indexOf(initialRoute)
-                val targetIndex = tabRoutes.indexOf(targetRoute)
-                val direction = if (targetIndex > initialIndex) 1 else -1
+                val dir = if (tabRoutes.indexOf(targetRoute) > tabRoutes.indexOf(initialRoute)) 1 else -1
                 slideInHorizontally(
-                    initialOffsetX = { it * direction },
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow)
-                ) + fadeIn(animationSpec = tween(300))
+                    initialOffsetX = { (it * 0.25f * dir).toInt() },
+                    animationSpec = tween(320, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(220, easing = FastOutLinearInEasing))
             } else {
-                scaleIn(initialScale = 0.85f, animationSpec = tween(400, easing = EaseOutCubic)) + fadeIn(animationSpec = tween(400))
+                // Detail push: slide up from bottom-right + fade
+                slideInVertically(
+                    initialOffsetY = { (it * 0.08f).toInt() },
+                    animationSpec = tween(380, easing = EaseOutQuart)
+                ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing))
             }
         },
         exitTransition = {
             val initialRoute = initialState.destination.route ?: ""
-            val targetRoute = targetState.destination.route ?: ""
-            val tabRoutes = items.map { it.route }
+            val targetRoute  = targetState.destination.route ?: ""
+            val tabRoutes    = items.map { it.route }
             if (initialRoute in tabRoutes && targetRoute in tabRoutes) {
-                val initialIndex = tabRoutes.indexOf(initialRoute)
-                val targetIndex = tabRoutes.indexOf(targetRoute)
-                val direction = if (targetIndex > initialIndex) -1 else 1
-                slideOutHorizontally(targetOffsetX = { it * direction }, animationSpec = tween(350, easing = FastOutSlowInEasing)) + fadeOut(animationSpec = tween(300))
+                val dir = if (tabRoutes.indexOf(targetRoute) > tabRoutes.indexOf(initialRoute)) -1 else 1
+                slideOutHorizontally(
+                    targetOffsetX = { (it * 0.25f * dir).toInt() },
+                    animationSpec = tween(320, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(200))
             } else {
-                scaleOut(targetScale = 1.15f, animationSpec = tween(400, easing = EaseOutCubic)) + fadeOut(animationSpec = tween(400))
+                // Slide slightly back + fade out behind new screen
+                slideOutVertically(
+                    targetOffsetY = { -(it * 0.06f).toInt() },
+                    animationSpec = tween(380, easing = EaseOutQuart)
+                ) + fadeOut(animationSpec = tween(280))
             }
         },
+        // Pop back: reverse push
         popEnterTransition = {
-            scaleIn(initialScale = 1.15f, animationSpec = tween(400, easing = EaseOutCubic)) + fadeIn(animationSpec = tween(400))
+            slideInVertically(
+                initialOffsetY = { -(it * 0.06f).toInt() },
+                animationSpec = tween(380, easing = EaseOutQuart)
+            ) + fadeIn(animationSpec = tween(300))
         },
         popExitTransition = {
-            scaleOut(targetScale = 0.85f, animationSpec = tween(400, easing = EaseOutCubic)) + fadeOut(animationSpec = tween(400))
+            slideOutVertically(
+                targetOffsetY = { (it * 0.08f).toInt() },
+                animationSpec = tween(340, easing = FastOutLinearInEasing)
+            ) + fadeOut(animationSpec = tween(260))
         }
     ) {
         composable(Screen.Home.route) {
             HomeScreen(
                 viewModel = hiltViewModel(),
                 onResultClick = { res -> navController.navigate("details/${res.id}") },
-                onSettingsClick = onNavigateToSettings,
+                onMenuClick = onMenuClick,
                 listState = homeListState,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this@composable
             )
         }
         composable(Screen.Links.route) {
-            LinksScreen(onBackClick = {}, isTopLevel = true, scrollState = linksScrollState)
+            LinksScreen(onBackClick = onMenuClick, isTopLevel = true, scrollState = linksScrollState)
         }
         composable(Screen.Revaluation.route) {
-            RevaluationScreen(listState = revalScrollState)
+            RevaluationScreen(listState = revalScrollState, onMenuClick = onMenuClick)
         }
         composable(Screen.Circulars.route) {
-            CircularsScreen(listState = circularsScrollState)
+            CircularsScreen(listState = circularsScrollState, onMenuClick = onMenuClick)
         }
         composable(Screen.ExamDates.route) {
-            ExamDatesScreen(listState = examDatesScrollState)
+            ExamDatesScreen(listState = examDatesScrollState, onMenuClick = onMenuClick)
         }
         composable(Screen.Calculator.route) {
-            CalculatorScreen()
+            CalculatorScreen(onMenuClick = onMenuClick)
         }
         composable(Screen.Vault.route) {
             VaultScreen(
+                onMenuClick = onMenuClick,
                 onViewPdf = { filePath, pdfTitle ->
                     val encodedPath = java.net.URLEncoder.encode(filePath, "UTF-8")
                     val encodedTitle = java.net.URLEncoder.encode(pdfTitle, "UTF-8")
@@ -360,10 +320,10 @@ private fun NavHostContent(
             )
         }
         composable("settings") {
-            SettingsScreen(scrollState = settingsScrollState)
+            SettingsScreen(scrollState = settingsScrollState, onMenuClick = onMenuClick)
         }
         composable(Screen.About.route) {
-            AboutScreen(scrollState = aboutScrollState)
+            AboutScreen(scrollState = aboutScrollState, onMenuClick = onMenuClick)
         }
         composable(
             route = "details/{resultId}",
@@ -402,108 +362,6 @@ private fun NavHostContent(
                 title = pdfTitle,
                 onBackClick = { navController.popBackStack() }
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun BottomBar(
-    barItems: List<Screen>,
-    aboutScreen: Screen,
-    currentDestination: androidx.navigation.NavDestination?,
-    onItemClick: (Screen) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Surface(
-            modifier = Modifier.weight(1f).height(64.dp),
-            shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
-            tonalElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                barItems.forEach { screen ->
-                    val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (selected) 1.25f else 1f,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                        label = "iconScale"
-                    )
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-                        tooltip = { PlainTooltip { Text(screen.label) } },
-                        state = rememberTooltipState()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(
-                                    if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                                    else Color.Transparent
-                                )
-                                .clickable { onItemClick(screen) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (selected) screen.selectedIcon else screen.icon,
-                                contentDescription = screen.label,
-                                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .graphicsLayer(scaleX = iconScale, scaleY = iconScale)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        val isAboutSelected = currentDestination?.hierarchy?.any { it.route == aboutScreen.route } == true
-        val aboutScale by animateFloatAsState(
-            targetValue = if (isAboutSelected) 1.15f else 1f,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-            label = "aboutScale"
-        )
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-            tooltip = { PlainTooltip { Text(aboutScreen.label) } },
-            state = rememberTooltipState()
-        ) {
-            Surface(
-                modifier = Modifier
-                    .size(68.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .clickable { onItemClick(aboutScreen) },
-                shape = RoundedCornerShape(22.dp),
-                color = if (isAboutSelected) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                tonalElevation = if (isAboutSelected) 4.dp else 12.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (isAboutSelected) aboutScreen.selectedIcon else aboutScreen.icon,
-                        contentDescription = aboutScreen.label,
-                        tint = if (isAboutSelected) MaterialTheme.colorScheme.onPrimary
-                               else MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier
-                            .size(30.dp)
-                            .graphicsLayer(scaleX = aboutScale, scaleY = aboutScale)
-                    )
-                }
-            }
         }
     }
 }
