@@ -32,7 +32,8 @@ class CircularRepository @Inject constructor(
                 title = entity.title,
                 link = entity.link,
                 description = entity.description,
-                pubDate = entity.pubDate
+                pubDate = entity.pubDate,
+                feedSource = entity.feedSource
             )
         }
     }
@@ -43,14 +44,21 @@ class CircularRepository @Inject constructor(
                 title = entity.title,
                 link = entity.link,
                 description = entity.description,
-                pubDate = entity.pubDate
+                pubDate = entity.pubDate,
+                feedSource = entity.feedSource
             )
         }
     }
 
     suspend fun fetchAllCirculars(): List<CircularRssItem> = withContext(Dispatchers.IO) {
         val items = coroutineScope {
-            feeds.map { url ->
+            feeds.mapIndexed { index, url ->
+                val sourceName = when (index) {
+                    0 -> "Exam"
+                    1 -> "Important"
+                    2 -> "Academic"
+                    else -> ""
+                }
                 async {
                     try {
                         val doc = Jsoup.connect(url)
@@ -63,11 +71,12 @@ class CircularRepository @Inject constructor(
                                 title = item.select("title").text(),
                                 link = item.select("link").text(),
                                 description = item.select("description").text(),
-                                pubDate = item.select("pubDate").text()
+                                pubDate = item.select("pubDate").text(),
+                                feedSource = sourceName
                             )
                         }
                     } catch (e: Exception) {
-                        Log.e("CircularRepository", "Failed to fetch feed: ${e.message}")
+                        Log.e("CircularRepository", "Failed to fetch feed $url: ${e.message}")
                         emptyList()
                     }
                 }
@@ -78,7 +87,8 @@ class CircularRepository @Inject constructor(
                 link = item.link,
                 title = item.title,
                 description = item.description,
-                pubDate = item.pubDate
+                pubDate = item.pubDate,
+                feedSource = item.feedSource
             )
         }
         dao.insertCirculars(entities)

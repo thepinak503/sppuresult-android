@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.animation.*
 import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,20 +12,25 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pinak.sppunotify.data.local.ResultEntity
+import pinak.sppunotify.ui.theme.DeptColors
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -96,6 +102,12 @@ fun ResultDetailsScreen(
                     .padding(padding)
                     .verticalScroll(scrollState)
                     .padding(20.dp)
+                    .animateContentSize(
+                        animationSpec = spring(
+                            stiffness = Spring.StiffnessLow,
+                            dampingRatio = Spring.DampingRatioLowBouncy
+                        )
+                    )
             ) {
                 AnimatedVisibility(
                     visible = visible,
@@ -109,11 +121,11 @@ fun ResultDetailsScreen(
                     label = "content",
                 ) {
                     Column {
-                        Card(
+                    Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                             ),
-                            shape = RoundedCornerShape(24.dp),
+                            shape = RoundedCornerShape(28.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .scale(pulseScale)
@@ -125,21 +137,59 @@ fun ResultDetailsScreen(
                                     resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                                 )
                         ) {
-                            Column(modifier = Modifier.padding(24.dp)) {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = "OFFICIAL ANNOUNCEMENT",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        fontWeight = FontWeight.Bold
+                            // Gradient hero banner strip
+                            val deptColor = DeptColors.accentFor(result.department)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(
+                                                deptColor,
+                                                MaterialTheme.colorScheme.primary,
+                                                deptColor.copy(alpha = 0.4f)
+                                            )
+                                        )
                                     )
+                                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                            )
+                            Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 24.dp)) {
+                                // Badge row: dept + official tag
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (result.department.isNotEmpty()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = deptColor.copy(alpha = 0.15f)
+                                        ) {
+                                            Text(
+                                                text = result.department,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = deptColor
+                                            )
+                                        }
+                                    }
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "OFFICIAL",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                    }
                                 }
 
-                                Spacer(modifier = Modifier.height(20.dp))
+                                Spacer(modifier = Modifier.height(18.dp))
 
                                 Text(
                                     text = result.title,
@@ -153,18 +203,32 @@ fun ResultDetailsScreen(
                                     )
                                 )
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(14.dp))
 
-                                Text(
-                                    text = "Published on ${result.publishedDate}",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.sharedElement(
-                                        rememberSharedContentState(key = "date-${result.id}"),
-                                        animatedVisibilityScope = animatedVisibilityScope
+                                // Published date
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Published on ${result.publishedDate}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.sharedElement(
+                                            rememberSharedContentState(key = "date-${result.id}"),
+                                            animatedVisibilityScope = animatedVisibilityScope
+                                        )
                                     )
-                                )
+                                }
+
+                                // Pattern name if available
+                                if (result.patternName.isNotBlank() && result.patternName.length <= 50 && result.patternName.contains(' ')) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = result.patternName,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
 
@@ -200,28 +264,39 @@ fun ResultDetailsScreen(
                         Spacer(modifier = Modifier.height(32.dp))
 
                         Button(
-                            onClick = { onViewInApp(result) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                        ) {
-                            Text("View Result in App", style = MaterialTheme.typography.titleMedium)
-                        }
+                                onClick = { onViewInApp(result) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Visibility,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text("View Result in App", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        OutlinedButton(
-                            onClick = { onOpenBrowser(result.url) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("Open in Browser", style = MaterialTheme.typography.titleMedium)
-                        }
-                    }
+                            OutlinedButton(
+                                onClick = { onOpenBrowser(result.url) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInBrowser,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text("Open in Browser", style = MaterialTheme.typography.titleMedium)
+                            }                  }
                 }
             }
         }

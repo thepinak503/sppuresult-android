@@ -52,12 +52,48 @@ class NotificationHelper(private val context: Context) {
             ).apply {
                 description = "Notifies when new exam form dates are updated"
             }
+
+            val newsChannel = NotificationChannel(
+                CHANNEL_NEWS,
+                "App Announcements",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "News and updates about the app"
+            }
             
             notificationManager.createNotificationChannel(resultChannel)
             notificationManager.createNotificationChannel(downloadChannel)
             notificationManager.createNotificationChannel(revalChannel)
             notificationManager.createNotificationChannel(examDateChannel)
+            notificationManager.createNotificationChannel(newsChannel)
         }
+    }
+
+    fun showNewsNotification(title: String, message: String, type: String = "ANNOUNCEMENT") {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val notification = NotificationCompat.Builder(context, CHANNEL_NEWS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(if (type == "ALERT") NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .apply {
+                if (type == "ALERT") {
+                    setCategory(NotificationCompat.CATEGORY_ALARM)
+                    setVibrate(longArrayOf(0, 500, 200, 500))
+                }
+            }
+            .build()
+        notificationManager.notify(NEWS_NOTIFICATION_ID, notification)
     }
 
     fun showRevalNotification(count: Int) {
@@ -177,9 +213,11 @@ class NotificationHelper(private val context: Context) {
         const val CHANNEL_DOWNLOADS = "download_notifications"
         const val CHANNEL_REVAL = "reval_notifications"
         const val CHANNEL_EXAM_DATES = "exam_date_notifications"
+        const val CHANNEL_NEWS = "news_notifications"
         const val GROUP_RESULTS = "pinak.sppunotify.RESULTS"
         const val SUMMARY_ID = 0
         const val REVAL_NOTIFICATION_ID = 100
         const val EXAM_DATE_NOTIFICATION_ID = 101
+        const val NEWS_NOTIFICATION_ID = 102
     }
 }

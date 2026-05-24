@@ -114,7 +114,7 @@ fun CalculatorScreen(onMenuClick: () -> Unit) {
                     readOnly = true,
                     label = { Text("Select Conversion Pattern") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true).fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                 )

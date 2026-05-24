@@ -9,11 +9,22 @@ import pinak.sppunotify.data.remote.RevaluationScraper
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import pinak.sppunotify.data.remote.ServerStatus
+
 @Singleton
 class RevalRepository @Inject constructor(
     private val scraper: RevaluationScraper,
     private val dao: RevalCourseDao,
 ) {
+    private val _serverStatus = MutableStateFlow<ServerStatus?>(null)
+    val serverStatus = _serverStatus.asStateFlow()
+
+    suspend fun updateServerStatus() {
+        val status = scraper.checkServerHealth()
+        _serverStatus.value = status
+    }
     suspend fun getAllCourses(): List<RevalCourse> = withContext(Dispatchers.IO) {
         dao.getAllCourses().map { entity ->
             RevalCourse(

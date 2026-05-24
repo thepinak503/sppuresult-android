@@ -46,8 +46,11 @@ class ExamDatesViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val serverStatus = repository.serverStatus
+
     init {
         refresh()
+        checkServerStatus()
     }
 
     fun onSearchQueryChange(query: String) {
@@ -56,6 +59,14 @@ class ExamDatesViewModel @Inject constructor(
 
     fun onStatusSelected(status: String) {
         _selectedStatus.value = status
+    }
+
+    fun checkServerStatus() {
+        viewModelScope.launch {
+            try {
+                repository.updateServerStatus()
+            } catch (_: Exception) {}
+        }
     }
 
     fun refresh() {
@@ -67,6 +78,7 @@ class ExamDatesViewModel @Inject constructor(
                 // Handle error
             } finally {
                 _isRefreshing.value = false
+                checkServerStatus()
             }
         }
     }

@@ -24,8 +24,19 @@ class RevaluationViewModel @Inject constructor(
     private val _errorMsg = MutableStateFlow("")
     val errorMsg = _errorMsg.asStateFlow()
 
+    val serverStatus = repository.serverStatus
+
     init {
         loadCourses()
+        checkServerStatus()
+    }
+
+    fun checkServerStatus() {
+        viewModelScope.launch {
+            try {
+                repository.updateServerStatus()
+            } catch (_: Exception) {}
+        }
     }
 
     fun loadCourses() {
@@ -43,6 +54,7 @@ class RevaluationViewModel @Inject constructor(
                 _errorMsg.value = e.message ?: "Failed to load"
             }
             _isLoading.value = false
+            checkServerStatus()
         }
     }
 }

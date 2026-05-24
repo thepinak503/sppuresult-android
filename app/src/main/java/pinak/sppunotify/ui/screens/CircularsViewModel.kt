@@ -13,6 +13,9 @@ import pinak.sppunotify.data.remote.CircularRssItem
 import pinak.sppunotify.data.repository.CircularRepository
 import javax.inject.Inject
 
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+
 @HiltViewModel
 class CircularsViewModel @Inject constructor(
     private val repository: CircularRepository
@@ -27,7 +30,15 @@ class CircularsViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
-    val circulars: StateFlow<List<CircularRssItem>> = repository.getCachedCirculars()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val circulars: StateFlow<List<CircularRssItem>> = _searchQuery
+        .flatMapLatest { query ->
+            if (query.isBlank()) {
+                repository.getCachedCirculars()
+            } else {
+                repository.searchCirculars(query)
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

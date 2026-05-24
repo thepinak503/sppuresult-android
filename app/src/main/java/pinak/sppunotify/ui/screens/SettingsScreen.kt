@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BatteryFull
@@ -44,6 +46,7 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
@@ -76,7 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import pinak.sppunotify.ui.theme.ThemeMode
 import pinak.sppunotify.ui.components.AppTopBar
 
@@ -150,26 +153,31 @@ fun SettingsScreen(
 
                     if (userPreferences.notificationsEnabled) {
                         Spacer(Modifier.height(16.dp))
-                        Text("Result Sync Interval", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                            listOf(15, 30, 60).forEach { mins ->
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { viewModel.updateResultSyncInterval(mins) }) {
-                                    RadioButton(selected = userPreferences.resultSyncInterval == mins, onClick = { viewModel.updateResultSyncInterval(mins) })
-                                    Text("${mins}m", style = MaterialTheme.typography.bodyMedium)
-                                }
-                            }
-                        }
+                        
+                        // Result Sync Interval
+                        SyncIntervalInput(
+                            label = "Result Sync Interval (minutes)",
+                            value = userPreferences.resultSyncInterval,
+                            onValueChange = { viewModel.updateResultSyncInterval(it) }
+                        )
 
-                        Spacer(Modifier.height(8.dp))
-                        Text("Revaluation Sync Interval", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                            listOf(30, 60, 120).forEach { mins ->
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { viewModel.updateRevalSyncInterval(mins) }) {
-                                    RadioButton(selected = userPreferences.revalSyncInterval == mins, onClick = { viewModel.updateRevalSyncInterval(mins) })
-                                    Text(if (mins >= 60) "${mins / 60}h" else "${mins}m", style = MaterialTheme.typography.bodyMedium)
-                                }
-                            }
-                        }
+                        Spacer(Modifier.height(12.dp))
+                        
+                        // Revaluation Sync Interval
+                        SyncIntervalInput(
+                            label = "Revaluation Sync Interval (minutes)",
+                            value = userPreferences.revalSyncInterval,
+                            onValueChange = { viewModel.updateRevalSyncInterval(it) }
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        // Exam Dates Sync Interval
+                        SyncIntervalInput(
+                            label = "Exam Dates Sync Interval (minutes)",
+                            value = userPreferences.examDateSyncInterval,
+                            onValueChange = { viewModel.updateExamDateSyncInterval(it) }
+                        )
                     }
                 }
             }
@@ -342,6 +350,7 @@ fun SettingsScreen(
                                     ThemeMode.SYSTEM -> Icons.Default.Settings
                                     ThemeMode.LIGHT -> Icons.Default.LightMode
                                     ThemeMode.DARK -> Icons.Default.DarkMode
+                                    ThemeMode.BLACK -> Icons.Default.PhoneAndroid // Using phone icon for OLED black
                                 },
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp),
@@ -352,6 +361,7 @@ fun SettingsScreen(
                                 ThemeMode.SYSTEM -> "System default"
                                 ThemeMode.LIGHT -> "Light"
                                 ThemeMode.DARK -> "Dark"
+                                ThemeMode.BLACK -> "Pitch Black (OLED)"
                             }, style = MaterialTheme.typography.bodyLarge)
                         }
                     }
@@ -421,5 +431,47 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SyncIntervalInput(
+    label: String,
+    value: Int,
+    onValueChange: (Int) -> Unit
+) {
+    var textValue by remember(value) { mutableStateOf(value.toString()) }
+    
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(4.dp))
+        OutlinedTextField(
+            value = textValue,
+            onValueChange = { newValue ->
+                if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                    textValue = newValue
+                    val intVal = newValue.toIntOrNull()
+                    if (intVal != null && intVal >= 1) { // Support intervals down to 1 minute
+                        onValueChange(intVal)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            suffix = { Text("min") },
+            supportingText = {
+                val current = textValue.toIntOrNull() ?: 0
+                if (current < 1) {
+                    Text("Minimum 1 minute required", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        )
     }
 }

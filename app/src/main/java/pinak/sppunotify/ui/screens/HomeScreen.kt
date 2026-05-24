@@ -2,6 +2,8 @@ package pinak.sppunotify.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,13 +13,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -25,9 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -35,8 +41,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.collectLatest
 import pinak.sppunotify.data.local.ResultEntity
+import pinak.sppunotify.ui.theme.DeptColors
 
 import androidx.compose.material.icons.filled.Circle
 import pinak.sppunotify.data.remote.StatusLevel
@@ -106,6 +114,7 @@ fun HomeScreen(
                                     tint = when (status.statusLevel) {
                                         StatusLevel.HEALTHY -> Color(0xFF4CAF50)
                                         StatusLevel.SLOW -> Color(0xFFFFC107)
+                                        StatusLevel.BUSY -> Color(0xFFFF9800)
                                         StatusLevel.DOWN -> Color(0xFFF44336)
                                     }
                                 )
@@ -114,6 +123,7 @@ fun HomeScreen(
                                     text = when (status.statusLevel) {
                                         StatusLevel.HEALTHY -> "Online (${status.responseTimeMs}ms)"
                                         StatusLevel.SLOW -> "Slow (${status.responseTimeMs}ms)"
+                                        StatusLevel.BUSY -> "Busy (Server Overloaded)"
                                         StatusLevel.DOWN -> "Down"
                                     },
                                     style = MaterialTheme.typography.labelSmall,
@@ -129,7 +139,7 @@ fun HomeScreen(
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
-                                imageVector = Icons.Default.Sort,
+                                imageVector = Icons.AutoMirrored.Filled.Sort,
                                 contentDescription = "Sort",
                                 tint = if (sortOrder != SortOrder.NEWEST_FIRST) {
                                     MaterialTheme.colorScheme.primary
@@ -168,46 +178,61 @@ fun HomeScreen(
                 sheetState = rememberModalBottomSheetState(),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 dragHandle = { BottomSheetDefaults.DragHandle() },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 32.dp)
+                        .padding(bottom = 40.dp)
                 ) {
                     Text(
                         text = "Sort Results By",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
                     )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+                    Spacer(Modifier.height(8.dp))
                     SortOrder.entries.forEach { order ->
                         val selected = sortOrder == order
-                        NavigationDrawerItem(
-                            label = { 
-                                Text(
-                                    order.label, 
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                                ) 
-                            },
-                            selected = selected,
-                            onClick = {
-                                viewModel.setSortOrder(order)
-                                showSortMenu = false
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            icon = {
-                                if (selected) {
-                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                                    else Color.Transparent
+                                )
+                                .clickable {
+                                    viewModel.setSortOrder(order)
+                                    showSortMenu = false
                                 }
-                            },
-                            colors = NavigationDrawerItemDefaults.colors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                selectedIconColor = MaterialTheme.colorScheme.primary
+                                .padding(horizontal = 20.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selected,
+                                onClick = {
+                                    viewModel.setSortOrder(order)
+                                    showSortMenu = false
+                                },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = MaterialTheme.colorScheme.primary
+                                )
                             )
-                        )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = order.label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }
@@ -315,54 +340,92 @@ fun HomeScreen(
             }
 
             if (!searchActive) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                AnimatedVisibility(
+                    visible = true,
+                    enter = slideInHorizontally { -it } + fadeIn()
                 ) {
-                    items(departments) { dept ->
-                        FilterChip(
-                            selected = selectedDept == dept,
-                            onClick = { viewModel.onDepartmentSelected(dept) },
-                            label = { Text(dept) },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
-                            border = null
-                        )
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(departments) { dept ->
+                            FilterChip(
+                                selected = selectedDept == dept,
+                                onClick = { viewModel.onDepartmentSelected(dept) },
+                                label = { Text(dept) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
+                                border = null
+                            )
+                        }
                     }
                 }
 
                 if (results.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = expandVertically() + fadeIn()
                     ) {
-                        Column {
-                            Text(
-                                text = "$totalCount results",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            if (lastUpdated.isNotEmpty()) {
-                                Text(
-                                    text = "Updated $lastUpdated",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            // Count pill
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                                tonalElevation = 0.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.School,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(13.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "$totalCount results",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                            // Right side: last updated + sort order
+                            Column(horizontalAlignment = Alignment.End) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Text(
+                                        text = sortOrder.label,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (lastUpdated.isNotEmpty()) {
+                                    Text(
+                                        text = "Updated $lastUpdated",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
                             }
                         }
-                        Text(
-                            text = sortOrder.label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
                     }
                 }
 
@@ -466,12 +529,14 @@ fun ResultCard(
         highlightText(result.title, searchQuery)
     }
 
+    val deptColor = remember(result.department) { DeptColors.accentFor(result.department) }
+
     var isPressed by remember { mutableStateOf(value = false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
+        targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
+            stiffness = Spring.StiffnessMediumLow
         ),
         label = "scale"
     )
@@ -493,45 +558,112 @@ fun ResultCard(
                     onClick()
                     isPressed = false
                 },
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(24.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
             ),
         ) {
-            ListItem(
-                headlineContent = {
-                    Text(
-                        text = highlightedTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.sharedElement(
-                            rememberSharedContentState(key = "title-${result.id}"),
-                            animatedVisibilityScope = animatedVisibilityScope
+            // Left-accent border strip
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    deptColor,
+                                    deptColor.copy(alpha = 0.3f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)
                         )
-                    )
-                },
-                supportingContent = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        .align(Alignment.CenterVertically)
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)
+                ) {
+                    // Department badge + date row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        if (result.department.isNotEmpty() && result.department != "Other UG") {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = deptColor.copy(alpha = 0.15f),
+                            ) {
+                                Text(
+                                    text = result.department,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = deptColor,
+                                    maxLines = 1
+                                )
+                            }
+                        } else {
+                            Spacer(Modifier.size(1.dp))
+                        }
                         Text(
                             text = result.publishedDate,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            fontWeight = FontWeight.Medium,
                             modifier = Modifier.sharedElement(
                                 rememberSharedContentState(key = "date-${result.id}"),
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
                         )
                     }
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-            )
+                    Spacer(Modifier.height(8.dp))
+                    // Title
+                    Text(
+                        text = highlightedTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 22.sp,
+                        modifier = Modifier.sharedElement(
+                            rememberSharedContentState(key = "title-${result.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    )
+                    // Pattern name sub-label — only if it's a human-readable name, not an encoded key
+                    if (result.patternName.isNotBlank() && result.patternName.length <= 50 && result.patternName.contains(' ')) {
+                        Spacer(Modifier.height(6.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BookmarkBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = result.patternName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
 
 private fun highlightText(text: String, query: String): androidx.compose.ui.text.AnnotatedString {
     if (query.isBlank()) return buildAnnotatedString { append(text) }
@@ -566,41 +698,69 @@ private fun highlightText(text: String, query: String): androidx.compose.ui.text
 @Composable
 fun EmptyState(message: String) {
     val infiniteTransition = rememberInfiniteTransition(label = "empty")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
+            animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "alpha"
+        label = "pulse"
+    )
+    val rotate by infiniteTransition.animateFloat(
+        initialValue = -6f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "rotate"
     )
 
     Column(
         modifier = Modifier.padding(48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = null,
-            modifier = Modifier
-                .size(80.dp)
-                .scale(alpha),
-            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
+        // Layered decorative icon cluster
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(96.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.School,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(96.dp)
+                    .graphicsLayer {
+                        scaleX = pulse; scaleY = pulse
+                        rotationZ = rotate
+                    },
+                tint = MaterialTheme.colorScheme.surfaceVariant
+            )
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(40.dp)
+                    .graphicsLayer { scaleX = pulse; scaleY = pulse },
+                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)
+            )
+        }
+        Spacer(modifier = Modifier.height(28.dp))
         Text(
             text = message,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.outline,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Try clearing filters or pulling down to refresh",
+            text = "Pull down to refresh · Clear filters to see all results",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp
         )
     }
 }

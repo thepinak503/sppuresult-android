@@ -10,12 +10,23 @@ import pinak.sppunotify.data.remote.ExamDateScraper
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
 @Singleton
 class ExamDateRepository @Inject constructor(
     private val scraper: ExamDateScraper,
     private val dao: ExamDateDao
 ) {
     val examDates: Flow<List<ExamDateEntity>> = dao.getAllExamDates()
+
+    private val _serverStatus = MutableStateFlow<pinak.sppunotify.data.remote.ServerStatus?>(null)
+    val serverStatus = _serverStatus.asStateFlow()
+
+    suspend fun updateServerStatus() {
+        val status = scraper.checkServerHealth()
+        _serverStatus.value = status
+    }
 
     suspend fun refreshExamDates(): List<ExamDateDto> = withContext(Dispatchers.IO) {
         val dtos = scraper.scrapeExamDates()

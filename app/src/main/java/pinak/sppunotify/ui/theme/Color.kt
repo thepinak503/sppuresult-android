@@ -41,6 +41,46 @@ val BackgroundLight             = Color(0xFFFDFDFD)
 val OnBackgroundLight           = Color(0xFF1C1B1F)
 val ScrimLight                  = Color(0xFF000000)
 
+// ── Department badge accent colours ───────────────────────────────────────────
+// Light-mode container / Dark-mode container pairs used as badge backgrounds
+object DeptColors {
+    val FE          = Color(0xFF4A55A2)   // indigo-blue
+    val SE          = Color(0xFF0D7377)   // teal
+    val TE          = Color(0xFF2E7D32)   // green-700
+    val BE          = Color(0xFF1565C0)   // blue-800
+    val MBA         = Color(0xFF6A1B9A)   // purple
+    val MCA         = Color(0xFF00838F)   // cyan-700
+    val MSc         = Color(0xFF37474F)   // blue-grey
+    val BCom        = Color(0xFFF57F17)   // amber-700
+    val BSc         = Color(0xFF558B2F)   // light-green
+    val BA          = Color(0xFF4E342E)   // brown
+    val BPharm      = Color(0xFFAD1457)   // pink-800
+    val Law         = Color(0xFF37474F)   // blue-grey
+    val Diploma     = Color(0xFF5D4037)   // brown
+    val Default     = Color(0xFF546E7A)   // slate
+
+    /** Returns the accent colour for a given department string */
+    fun accentFor(department: String): Color = when {
+        department.startsWith("FE")                          -> FE
+        department.startsWith("SE")                          -> SE
+        department.startsWith("TE")                          -> TE
+        department.startsWith("BE")                          -> BE
+        department.startsWith("MBA")                         -> MBA
+        department.startsWith("MCA")                         -> MCA
+        department.startsWith("M.Sc") ||
+            department.startsWith("M.A") ||
+            department.startsWith("M.Com")                   -> MSc
+        department.startsWith("B.Com")                       -> BCom
+        department.startsWith("B.Sc")                        -> BSc
+        department.startsWith("B.A")                         -> BA
+        department.startsWith("B.Pharm")                     -> BPharm
+        department.startsWith("Law")                         -> Law
+        department.startsWith("Diploma")                     -> Diploma
+        else                                                 -> Default
+    }
+}
+
+
 // ── Dark Scheme ───────────────────────────────────────────────────────────────
 val PrimaryDark                 = Color(0xFF5DADE2)
 val OnPrimaryDark               = Color(0xFF0D2E42)

@@ -38,7 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -134,7 +134,7 @@ fun MainScreen() {
                         }
                         Spacer(Modifier.height(14.dp))
                         Text(
-                            "SPPU Result Watch",
+                            "SPPU Result Notify",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -241,15 +241,15 @@ private fun NavHostContent(
             if (initialRoute in tabRoutes && targetRoute in tabRoutes) {
                 val dir = if (tabRoutes.indexOf(targetRoute) > tabRoutes.indexOf(initialRoute)) 1 else -1
                 slideInHorizontally(
-                    initialOffsetX = { (it * 0.25f * dir).toInt() },
-                    animationSpec = tween(320, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(220, easing = FastOutLinearInEasing))
+                    initialOffsetX = { (it * 0.15f * dir).toInt() },
+                    animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                ) + fadeIn(animationSpec = tween(300))
             } else {
-                // Detail push: slide up from bottom-right + fade
-                slideInVertically(
-                    initialOffsetY = { (it * 0.08f).toInt() },
-                    animationSpec = tween(380, easing = EaseOutQuart)
-                ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing))
+                // Detail push: scale in + fade
+                scaleIn(
+                    initialScale = 0.92f,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
+                ) + fadeIn(animationSpec = tween(400))
             }
         },
         exitTransition = {
@@ -259,29 +259,29 @@ private fun NavHostContent(
             if (initialRoute in tabRoutes && targetRoute in tabRoutes) {
                 val dir = if (tabRoutes.indexOf(targetRoute) > tabRoutes.indexOf(initialRoute)) -1 else 1
                 slideOutHorizontally(
-                    targetOffsetX = { (it * 0.25f * dir).toInt() },
-                    animationSpec = tween(320, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(200))
+                    targetOffsetX = { (it * 0.15f * dir).toInt() },
+                    animationSpec = spring(stiffness = Spring.StiffnessLow)
+                ) + fadeOut(animationSpec = tween(300))
             } else {
-                // Slide slightly back + fade out behind new screen
+                // Slide slightly back + fade out
                 slideOutVertically(
-                    targetOffsetY = { -(it * 0.06f).toInt() },
-                    animationSpec = tween(380, easing = EaseOutQuart)
-                ) + fadeOut(animationSpec = tween(280))
+                    targetOffsetY = { -(it * 0.04f).toInt() },
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
             }
         },
-        // Pop back: reverse push
+        // Pop back: scale out + reverse push
         popEnterTransition = {
             slideInVertically(
-                initialOffsetY = { -(it * 0.06f).toInt() },
-                animationSpec = tween(380, easing = EaseOutQuart)
+                initialOffsetY = { -(it * 0.04f).toInt() },
+                animationSpec = tween(400, easing = EaseOutQuart)
             ) + fadeIn(animationSpec = tween(300))
         },
         popExitTransition = {
-            slideOutVertically(
-                targetOffsetY = { (it * 0.08f).toInt() },
-                animationSpec = tween(340, easing = FastOutLinearInEasing)
-            ) + fadeOut(animationSpec = tween(260))
+            scaleOut(
+                targetScale = 0.92f,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+            ) + fadeOut(animationSpec = tween(300))
         }
     ) {
         composable(Screen.Home.route) {

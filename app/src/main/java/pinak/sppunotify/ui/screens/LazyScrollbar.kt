@@ -24,7 +24,6 @@ fun LazyScrollbar(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isDragging by remember { mutableStateOf(false) }
-    var dragProgress by remember { mutableStateOf(0f) }
 
     // Visual feedback for dragging
     val alpha by animateFloatAsState(
@@ -40,22 +39,24 @@ fun LazyScrollbar(
     // Hide if nothing to scroll
     if (totalItems <= 0 || visibleItems.isEmpty() || visibleItems.size >= totalItems) return
 
-    val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
-    
-    // Calculate current scroll progress from list state (when not dragging)
+    // Calculate current scroll progress from list state
     val stateProgress by remember {
         derivedStateOf {
-            val index = listState.firstVisibleItemIndex
-            val offset = listState.firstVisibleItemScrollOffset
-            val firstItemSize = visibleItems.firstOrNull()?.size ?: 1
-            val totalScrollableItems = (totalItems.toFloat() - (viewportHeight.toFloat() / firstItemSize)).coerceAtLeast(1f)
-            val currentScrollPos = index.toFloat() + (offset.toFloat() / firstItemSize)
-            (currentScrollPos / totalScrollableItems).coerceIn(0f, 1f)
+            val currentLayoutInfo = listState.layoutInfo
+            val currentTotalItems = currentLayoutInfo.totalItemsCount
+            val currentVisibleItems = currentLayoutInfo.visibleItemsInfo
+            if (currentTotalItems <= 0 || currentVisibleItems.isEmpty()) {
+                0f
+            } else {
+                val currentViewportHeight = currentLayoutInfo.viewportEndOffset - currentLayoutInfo.viewportStartOffset
+                val averageItemSize = currentVisibleItems.map { it.size }.average().toFloat().coerceAtLeast(1f)
+                val totalScrollRange = (currentTotalItems * averageItemSize).coerceAtLeast(1f)
+                val currentScrollOffset = (listState.firstVisibleItemIndex * averageItemSize) + listState.firstVisibleItemScrollOffset
+                val scrollableRange = (totalScrollRange - currentViewportHeight).coerceAtLeast(1f)
+                (currentScrollOffset / scrollableRange).coerceIn(0f, 1f)
+            }
         }
     }
-
-    // Display progress is either the live state or the finger's drag position
-    val currentProgress = if (isDragging) dragProgress else stateProgress
 
     val thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
@@ -64,29 +65,30 @@ fun LazyScrollbar(
         modifier = modifier
             .width(32.dp) // Large touch area
             .fillMaxHeight()
-            .pointerInput(totalItems) {
+            .pointerInput(listState) {
                 detectVerticalDragGestures(
                     onDragStart = { 
                         isDragging = true
-                        dragProgress = stateProgress
                     },
                     onDragEnd = { isDragging = false },
                     onDragCancel = { isDragging = false },
                     onVerticalDrag = { change, dragAmount ->
                         change.consume()
-                        val trackHeight = size.height.toFloat()
-                        val thumbHeight = (trackHeight * (visibleItems.size.toFloat() / totalItems.toFloat())).coerceAtLeast(60f)
-                        val scrollableArea = trackHeight - thumbHeight
-                        
-                        if (scrollableArea > 0) {
-                            // Move the virtual thumb
-                            val deltaProgress = dragAmount / scrollableArea
-                            dragProgress = (dragProgress + deltaProgress).coerceIn(0f, 1f)
+                        val currentLayoutInfo = listState.layoutInfo
+                        val currentTotalItems = currentLayoutInfo.totalItemsCount
+                        val currentVisibleItems = currentLayoutInfo.visibleItemsInfo
+                        if (currentTotalItems > 0 && currentVisibleItems.isNotEmpty()) {
+                            val trackHeight = size.height.toFloat()
+                            val thumbHeight = (trackHeight * (currentVisibleItems.size.toFloat() / currentTotalItems.toFloat())).coerceAtLeast(60f)
+                            val scrollableArea = trackHeight - thumbHeight
                             
-                            // Scroll the list to match the virtual thumb
-                            val targetIndex = (dragProgress * (totalItems - 1)).toInt().coerceIn(0, totalItems - 1)
-                            coroutineScope.launch {
-                                listState.scrollToItem(targetIndex)
+                            if (scrollableArea > 0) {
+                                val deltaProgress = dragAmount / scrollableArea
+                                val newProgress = (stateProgress + deltaProgress).coerceIn(0f, 1f)
+                                val targetIndex = (newProgress * (currentTotalItems - 1)).toInt().coerceIn(0, currentTotalItems - 1)
+                                coroutineScope.launch {
+                                    listState.scrollToItem(targetIndex)
+                                }
                             }
                         }
                     }
@@ -95,7 +97,7 @@ fun LazyScrollbar(
     ) {
         val trackHeight = size.height
         val thumbHeight = (trackHeight * (visibleItems.size.toFloat() / totalItems.toFloat())).coerceAtLeast(60f)
-        val thumbOffset = currentProgress * (trackHeight - thumbHeight)
+        val thumbOffset = stateProgress * (trackHeight - thumbHeight)
 
         // Draw track
         drawRoundRect(

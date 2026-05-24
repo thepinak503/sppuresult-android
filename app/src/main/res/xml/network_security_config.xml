@@ -4,6 +4,7 @@
         <domain includeSubdomains="true">unipune.ac.in</domain>
         <trust-anchors>
             <certificates src="@raw/rapidssl_tls_rsa_ca_g1"/>
+            <certificates src="@raw/digicert_global_root_g2"/>
             <certificates src="system"/>
         </trust-anchors>
     </domain-config>

@@ -23,10 +23,14 @@ class PreferenceManager @Inject constructor(
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val RESULT_SYNC_INTERVAL = intPreferencesKey("result_sync_interval_min")
         val REVAL_SYNC_INTERVAL = intPreferencesKey("reval_sync_interval_min")
+        val EXAM_DATE_SYNC_INTERVAL = intPreferencesKey("exam_date_sync_interval_min")
         val WATCHLIST_KEYWORDS = stringSetPreferencesKey("watchlist_keywords")
         val USER_PROFILES = stringSetPreferencesKey("user_profiles")
         val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val LAST_ANNOUNCEMENT_ID = stringPreferencesKey("last_announcement_id")
+        val WAS_SERVER_DOWN = booleanPreferencesKey("was_server_down")
+        val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
     }
 
     val preferencesFlow: Flow<UserPreferences> = dataStore.data.map { preferences ->
@@ -37,11 +41,33 @@ class PreferenceManager @Inject constructor(
             notificationsEnabled = preferences[PreferencesKeys.NOTIFICATIONS_ENABLED] ?: true,
             resultSyncInterval = preferences[PreferencesKeys.RESULT_SYNC_INTERVAL] ?: 15,
             revalSyncInterval = preferences[PreferencesKeys.REVAL_SYNC_INTERVAL] ?: 60,
+            examDateSyncInterval = preferences[PreferencesKeys.EXAM_DATE_SYNC_INTERVAL] ?: 180,
             watchlistKeywords = preferences[PreferencesKeys.WATCHLIST_KEYWORDS] ?: emptySet(),
             profiles = profiles,
             activeProfileId = preferences[PreferencesKeys.ACTIVE_PROFILE_ID],
-            themeMode = preferences[PreferencesKeys.THEME_MODE] ?: "SYSTEM"
+            themeMode = preferences[PreferencesKeys.THEME_MODE] ?: "SYSTEM",
+            lastAnnouncementId = preferences[PreferencesKeys.LAST_ANNOUNCEMENT_ID] ?: "",
+            wasServerDown = preferences[PreferencesKeys.WAS_SERVER_DOWN] ?: false,
+            developerMode = preferences[PreferencesKeys.DEVELOPER_MODE] ?: false
         )
+    }
+
+    suspend fun updateDeveloperMode(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.DEVELOPER_MODE] = enabled
+        }
+    }
+
+    suspend fun updateWasServerDown(isDown: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.WAS_SERVER_DOWN] = isDown
+        }
+    }
+
+    suspend fun updateLastAnnouncementId(id: String) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LAST_ANNOUNCEMENT_ID] = id
+        }
     }
 
     suspend fun updateNotificationsEnabled(enabled: Boolean) {
@@ -59,6 +85,12 @@ class PreferenceManager @Inject constructor(
     suspend fun updateRevalSyncInterval(intervalMinutes: Int) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.REVAL_SYNC_INTERVAL] = intervalMinutes
+        }
+    }
+
+    suspend fun updateExamDateSyncInterval(intervalMinutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.EXAM_DATE_SYNC_INTERVAL] = intervalMinutes
         }
     }
 
@@ -132,8 +164,12 @@ data class UserPreferences(
     val notificationsEnabled: Boolean,
     val resultSyncInterval: Int,
     val revalSyncInterval: Int,
+    val examDateSyncInterval: Int,
     val watchlistKeywords: Set<String>,
     val profiles: List<UserProfile>,
     val activeProfileId: String?,
-    val themeMode: String = "SYSTEM"
+    val themeMode: String = "SYSTEM",
+    val lastAnnouncementId: String = "",
+    val wasServerDown: Boolean = false,
+    val developerMode: Boolean = false
 )

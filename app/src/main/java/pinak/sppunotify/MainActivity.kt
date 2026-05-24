@@ -15,6 +15,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -22,6 +23,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import pinak.sppunotify.ui.screens.BrandSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -103,7 +108,17 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        
+        splashScreen.setOnExitAnimationListener { splashProvider ->
+            val zoomX = android.view.animation.AnimationUtils.loadAnimation(this, android.R.anim.fade_out)
+            splashProvider.view.startAnimation(zoomX)
+            Handler(Looper.getMainLooper()).postDelayed({
+                splashProvider.remove()
+            }, 300)
+        }
+
         enableEdgeToEdge()
 
         try {
@@ -122,7 +137,21 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             SPPUResultWatchTheme(themeMode = themeMode) {
-                AppSetupFlow()
+                var showSplash by remember { mutableStateOf(true) }
+                AnimatedContent(
+                    targetState = showSplash,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(400)) togetherWith
+                                fadeOut(animationSpec = tween(400))
+                    },
+                    label = "SplashTransition"
+                ) { isSplash ->
+                    if (isSplash) {
+                        BrandSplashScreen(onAnimationComplete = { showSplash = false })
+                    } else {
+                        AppSetupFlow()
+                    }
+                }
             }
         }
     }
@@ -184,7 +213,7 @@ class MainActivity : FragmentActivity() {
             if (isOnline && disclaimerAccepted && showPermissionDialog) {
                 SetupPopup(
                     title = "Notifications Required",
-                    message = "SPPU Result Watch needs notification permission to alert you when new results are published. This is highly recommended for background sync.",
+                    message = "SPPU Result Notify needs notification permission to alert you when new results are published. This is highly recommended for background sync.",
                     icon = Icons.Default.Notifications,
                     confirmLabel = "Grant Permission",
                     onConfirm = {

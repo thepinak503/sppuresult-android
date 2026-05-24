@@ -5,10 +5,14 @@ import android.net.Uri
 import androidx.fragment.app.FragmentActivity
 import pinak.sppunotify.util.BiometricHelper
 import pinak.sppunotify.util.safeStartActivity
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -27,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import pinak.sppunotify.data.local.DownloadedResultEntity
 import pinak.sppunotify.ui.components.AppEmptyState
 import pinak.sppunotify.ui.components.AppTopBar
@@ -111,8 +115,10 @@ fun VaultScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize().padding(padding)
             ) {
-                items(results) { res ->
-                    VaultCard(res, 
+                items(results, key = { it.uid }) { res ->
+                    VaultCard(
+                        result = res,
+                        modifier = Modifier.animateItem(),
                         onOpen = {
                             val intent = Intent(Intent.ACTION_VIEW).apply {
                                 setDataAndType(Uri.parse(res.filePath), res.mimeType)
@@ -150,13 +156,19 @@ fun VaultScreen(
 }
 
 @Composable
-fun VaultCard(result: DownloadedResultEntity, onOpen: () -> Unit, onViewInApp: () -> Unit, onDelete: () -> Unit) {
+fun VaultCard(
+    result: DownloadedResultEntity,
+    modifier: Modifier = Modifier,
+    onOpen: () -> Unit,
+    onViewInApp: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val dateStr = remember(result.downloadDate) {
         SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(result.downloadDate))
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onOpen() },
+        modifier = modifier.fillMaxWidth().clickable { onOpen() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
     ) {

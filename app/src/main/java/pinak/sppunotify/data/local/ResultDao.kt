@@ -8,19 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ResultDao {
-    @Query("""
-        SELECT * FROM results 
-        ORDER BY 
-          CASE WHEN publishedTimestamp > 0 THEN publishedTimestamp ELSE 0 END DESC,
-          substr(publishedDate, 7, 4) DESC,
-          CASE substr(publishedDate, 4, 3)
-            WHEN 'Jan' THEN 1 WHEN 'Feb' THEN 2 WHEN 'Mar' THEN 3 WHEN 'Apr' THEN 4
-            WHEN 'May' THEN 5 WHEN 'Jun' THEN 6 WHEN 'Jul' THEN 7 WHEN 'Aug' THEN 8
-            WHEN 'Sep' THEN 9 WHEN 'Oct' THEN 10 WHEN 'Nov' THEN 11 WHEN 'Dec' THEN 12
-            WHEN '- M' THEN 5 WHEN '- A' THEN 4
-          END DESC,
-          substr(publishedDate, 1, 2) DESC
-    """)
+    @Query("SELECT * FROM results ORDER BY publishedTimestamp DESC, fetchedAt DESC")
     fun getAllResults(): Flow<List<ResultEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -34,4 +22,7 @@ interface ResultDao {
 
     @Query("DELETE FROM results")
     suspend fun clearAll()
+
+    @Query("DELETE FROM results WHERE fetchedAt < :timestamp")
+    suspend fun deleteOldResults(timestamp: Long)
 }

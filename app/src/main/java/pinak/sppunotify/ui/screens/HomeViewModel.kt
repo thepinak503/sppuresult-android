@@ -80,8 +80,8 @@ class HomeViewModel @Inject constructor(
 
         if (tokens.isEmpty()) {
             when (sortOrder) {
-                SortOrder.NEWEST_FIRST -> filtered
-                SortOrder.OLDEST_FIRST -> filtered.reversed()
+                SortOrder.NEWEST_FIRST -> filtered.sortedByDescending { it.publishedTimestamp }
+                SortOrder.OLDEST_FIRST -> filtered.sortedBy { it.publishedTimestamp }
                 SortOrder.NAME_A_Z -> filtered.sortedBy { it.title.lowercase() }
                 SortOrder.NAME_Z_A -> filtered.sortedByDescending { it.title.lowercase() }
             }
@@ -127,17 +127,29 @@ class HomeViewModel @Inject constructor(
                     _uiEvent.send(UiEvent.ShowSnackbar("${newResults.size} new result(s) found"))
                 }
             } catch (e: Exception) {
-                val msg = when {
-                    e.message?.contains("502") == true -> "SPPU server is down (502 Bad Gateway)."
-                    e.message?.contains("503") == true -> "SPPU server is busy (503 Service Unavailable)."
-                    e.message?.contains("504") == true -> "SPPU server timed out (504 Gateway Time-out)."
-                    e.message?.contains("timeout", ignoreCase = true) == true -> "Connection timed out."
-                    else -> "Network error: ${e.message ?: "Unknown"}"
+                checkServerStatus()
+                val status = serverStatus.value
+                val msg = if (status != null && !status.isOnline) {
+                    "SPPU server is not responding (last checked: ${status.responseTimeMs}ms)"
+                } else {
+                    deriveErrorMessage(e)
                 }
                 _uiEvent.send(UiEvent.ShowErrorDialog("Warning", msg))
             } finally {
                 _isRefreshing.value = false
             }
+        }
+    }
+
+    private fun deriveErrorMessage(e: Exception): String {
+        val msg = e.message?.lowercase() ?: return "Network error: Unknown"
+        return when {
+            msg.contains("502") -> "SPPU server is down (502 Bad Gateway)."
+            msg.contains("503") -> "SPPU server is busy (503 Service Unavailable)."
+            msg.contains("504") -> "SPPU server timed out (504 Gateway Time-out)."
+            msg.contains("timeout") || msg.contains("timed out") -> "Connection timed out."
+            msg.contains("unreachable") -> "Server unreachable."
+            else -> "Network error: ${e.message}"
         }
     }
 

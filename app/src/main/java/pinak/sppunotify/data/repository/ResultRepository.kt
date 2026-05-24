@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class ResultRepository @Inject constructor(
     private val scraper: ResultScraper,
     private val db: ResultDatabase,
+    private val preferenceManager: pinak.sppunotify.data.local.PreferenceManager
 ) {
     // Expose local database flow for offline-first support
     val results: Flow<List<ResultEntity>> = db.dao.getAllResults()
@@ -29,10 +30,18 @@ class ResultRepository @Inject constructor(
     val serverStatus = _serverStatus.asStateFlow()
 
     suspend fun updateServerStatus() {
-        _serverStatus.value = scraper.checkServerHealth()
+        val status = scraper.checkServerHealth()
+        _serverStatus.value = status
+        
+        // Use standard preference flow to update history
+        preferenceManager.updateWasServerDown(!status.isOnline)
     }
 
     suspend fun fetchResults(): List<ResultDto> = withContext(Dispatchers.IO) {
+        // Auto-cleanup: remove results older than 6 months
+        val sixMonthsAgo = System.currentTimeMillis() - (180L * 24 * 60 * 60 * 1000)
+        db.dao.deleteOldResults(sixMonthsAgo)
+
         val scrapedResults = scraper.scrapeLatestResults()
         
         // Calculate newly found results for notification purposes BEFORE inserting

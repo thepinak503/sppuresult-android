@@ -2,7 +2,9 @@ package pinak.sppunotify.worker
 
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import pinak.sppunotify.data.local.UserPreferences
@@ -24,7 +26,7 @@ class WorkManagerHelper @Inject constructor(
         if (preferences.notificationsEnabled) {
             scheduleResultSync(preferences.resultSyncInterval)
             scheduleRevalSync(preferences.revalSyncInterval)
-            scheduleExamDateSync(preferences.resultSyncInterval) // Using resultSyncInterval for now
+            scheduleExamDateSync(preferences.examDateSyncInterval)
         } else {
             cancelAllSync()
         }
@@ -35,15 +37,28 @@ class WorkManagerHelper @Inject constructor(
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val request = PeriodicWorkRequestBuilder<ResultSyncWorker>(
-            intervalMinutes.toLong(), TimeUnit.MINUTES
-        ).setConstraints(constraints).build()
+        workManager.cancelUniqueWork(RESULT_SYNC_WORK_NAME)
 
-        workManager.enqueueUniquePeriodicWork(
-            RESULT_SYNC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
-        )
+        if (intervalMinutes < 15) {
+            val request = OneTimeWorkRequestBuilder<ResultSyncWorker>()
+                .setInitialDelay(intervalMinutes.toLong(), TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .build()
+            workManager.enqueueUniqueWork(
+                RESULT_SYNC_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        } else {
+            val request = PeriodicWorkRequestBuilder<ResultSyncWorker>(
+                intervalMinutes.toLong(), TimeUnit.MINUTES
+            ).setConstraints(constraints).build()
+            workManager.enqueueUniquePeriodicWork(
+                RESULT_SYNC_WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        }
     }
 
     private fun scheduleRevalSync(intervalMinutes: Int) {
@@ -51,15 +66,28 @@ class WorkManagerHelper @Inject constructor(
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val request = PeriodicWorkRequestBuilder<RevalSyncWorker>(
-            intervalMinutes.toLong(), TimeUnit.MINUTES
-        ).setConstraints(constraints).build()
+        workManager.cancelUniqueWork(REVAL_SYNC_WORK_NAME)
 
-        workManager.enqueueUniquePeriodicWork(
-            REVAL_SYNC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
-        )
+        if (intervalMinutes < 15) {
+            val request = OneTimeWorkRequestBuilder<RevalSyncWorker>()
+                .setInitialDelay(intervalMinutes.toLong(), TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .build()
+            workManager.enqueueUniqueWork(
+                REVAL_SYNC_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        } else {
+            val request = PeriodicWorkRequestBuilder<RevalSyncWorker>(
+                intervalMinutes.toLong(), TimeUnit.MINUTES
+            ).setConstraints(constraints).build()
+            workManager.enqueueUniquePeriodicWork(
+                REVAL_SYNC_WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        }
     }
 
     private fun scheduleExamDateSync(intervalMinutes: Int) {
@@ -67,15 +95,28 @@ class WorkManagerHelper @Inject constructor(
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        val request = PeriodicWorkRequestBuilder<ExamDateSyncWorker>(
-            intervalMinutes.toLong(), TimeUnit.MINUTES
-        ).setConstraints(constraints).build()
+        workManager.cancelUniqueWork(EXAM_DATE_SYNC_WORK_NAME)
 
-        workManager.enqueueUniquePeriodicWork(
-            EXAM_DATE_SYNC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request
-        )
+        if (intervalMinutes < 15) {
+            val request = OneTimeWorkRequestBuilder<ExamDateSyncWorker>()
+                .setInitialDelay(intervalMinutes.toLong(), TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .build()
+            workManager.enqueueUniqueWork(
+                EXAM_DATE_SYNC_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        } else {
+            val request = PeriodicWorkRequestBuilder<ExamDateSyncWorker>(
+                intervalMinutes.toLong(), TimeUnit.MINUTES
+            ).setConstraints(constraints).build()
+            workManager.enqueueUniquePeriodicWork(
+                EXAM_DATE_SYNC_WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        }
     }
 
     fun cancelAllSync() {

@@ -1,22 +1,28 @@
 package pinak.sppunotify.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.Color
+import pinak.sppunotify.data.remote.StatusLevel
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import pinak.sppunotify.data.local.ExamDateEntity
 import pinak.sppunotify.ui.components.AppEmptyState
 import pinak.sppunotify.ui.components.AppSearchBar
@@ -33,12 +39,47 @@ fun ExamDatesScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedStatus by viewModel.selectedStatus.collectAsState()
+    val serverStatus by viewModel.serverStatus.collectAsState()
     var searchActive by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Exam Dates",
+                titleContent = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Exam Dates",
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        serverStatus?.let { status ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Circle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(8.dp),
+                                    tint = when (status.statusLevel) {
+                                        StatusLevel.HEALTHY -> Color(0xFF4CAF50)
+                                        StatusLevel.SLOW -> Color(0xFFFFC107)
+                                        StatusLevel.BUSY -> Color(0xFFFF9800)
+                                        StatusLevel.DOWN -> Color(0xFFF44336)
+                                    }
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = when (status.statusLevel) {
+                                        StatusLevel.HEALTHY -> "Online (${status.responseTimeMs}ms)"
+                                        StatusLevel.SLOW -> "Slow (${status.responseTimeMs}ms)"
+                                        StatusLevel.BUSY -> "Busy"
+                                        StatusLevel.DOWN -> "Down"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                },
                 navIcon = Icons.Default.Menu,
                 onNavClick = onMenuClick,
                 actions = {
@@ -66,23 +107,29 @@ fun ExamDatesScreen(
                 )
 
                 if (!searchActive) {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = true,
+                        enter = slideInHorizontally { -it } + fadeIn()
                     ) {
-                        items(listOf("All", "Active", "Over")) { status ->
-                            FilterChip(
-                                selected = selectedStatus == status,
-                                onClick = { viewModel.onStatusSelected(status) },
-                                label = { Text(status) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                ),
-                                border = null
-                            )
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            val statuses = listOf("All", "Active", "Over")
+                            items(statuses) { status ->
+                                FilterChip(
+                                    selected = selectedStatus == status,
+                                    onClick = { viewModel.onStatusSelected(status) },
+                                    label = { Text(status) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                    border = null
+                                )
+                            }
                         }
                     }
                 }
@@ -120,18 +167,28 @@ fun ExamDatesScreen(
                         }
                     }
                     else -> {
-                        LazyColumn(
-                            state = listState,
-                            contentPadding = PaddingValues(
-                                start = 16.dp, end = 16.dp,
-                                top = 8.dp, bottom = 120.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(examDates) { item ->
-                                ExamDateCard(item)
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(
+                                state = listState,
+                                contentPadding = PaddingValues(
+                                    start = 16.dp, end = 16.dp,
+                                    top = 8.dp, bottom = 120.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(examDates, key = { it.courseName }) { item ->
+                                    ExamDateCard(
+                                        item = item,
+                                        modifier = Modifier.animateItem()
+                                    )
+                                }
                             }
+
+                            LazyScrollbar(
+                                listState = listState,
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                            )
                         }
                     }
                 }
@@ -141,9 +198,21 @@ fun ExamDatesScreen(
 }
 
 @Composable
-fun ExamDateCard(item: ExamDateEntity) {
+fun ExamDateCard(
+    item: ExamDateEntity,
+    modifier: Modifier = Modifier,
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+        label = "scale"
+    )
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)

@@ -16,7 +16,38 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-enum class ThemeMode { SYSTEM, LIGHT, DARK }
+enum class ThemeMode { SYSTEM, LIGHT, DARK, BLACK }
+
+private val BlackColorScheme = darkColorScheme(
+    primary                = PrimaryDark,
+    onPrimary              = OnPrimaryDark,
+    primaryContainer       = PrimaryContainerDark,
+    onPrimaryContainer     = OnPrimaryContainerDark,
+    secondary              = SecondaryDark,
+    onSecondary            = OnSecondaryDark,
+    secondaryContainer     = SecondaryContainerDark,
+    onSecondaryContainer   = OnSecondaryContainerDark,
+    tertiary               = TertiaryDark,
+    onTertiary             = OnTertiaryDark,
+    tertiaryContainer      = TertiaryContainerDark,
+    onTertiaryContainer    = OnTertiaryContainerDark,
+    error                  = ErrorDark,
+    onError                = OnErrorDark,
+    errorContainer         = ErrorContainerDark,
+    onErrorContainer       = OnErrorContainerDark,
+    background             = Color.Black,
+    onBackground           = Color.White,
+    surface                = Color.Black,
+    onSurface              = Color.White,
+    surfaceVariant         = Color(0xFF1A1A1A),
+    onSurfaceVariant       = Color.LightGray,
+    surfaceContainerLow    = Color(0xFF080808),
+    surfaceContainer       = Color(0xFF121212),
+    surfaceContainerHigh   = Color(0xFF1E1E1E),
+    outline                = OutlineDark,
+    outlineVariant         = OutlineVariantDark,
+    scrim                  = Color.Black,
+)
 
 private val DarkColorScheme = darkColorScheme(
     primary                = PrimaryDark,
@@ -89,10 +120,11 @@ fun SPPUResultWatchTheme(
     val isDark = when (themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT  -> false
-        ThemeMode.DARK   -> true
+        ThemeMode.DARK, ThemeMode.BLACK -> true
     }
 
     val colorScheme = when {
+        themeMode == ThemeMode.BLACK -> BlackColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (isDark) {
@@ -126,6 +158,7 @@ fun SPPUResultWatchTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            @Suppress("DEPRECATION")
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 window.statusBarColor     = Color.Transparent.toArgb()
                 window.navigationBarColor = Color.Transparent.toArgb()
