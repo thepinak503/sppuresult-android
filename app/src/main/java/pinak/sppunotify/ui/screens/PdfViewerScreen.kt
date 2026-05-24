@@ -3,8 +3,9 @@ package pinak.sppunotify.ui.screens
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
-import android.net.Uri
 import android.os.ParcelFileDescriptor
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,7 +55,7 @@ fun PdfViewerScreen(
 
     LaunchedEffect(fileUri) {
         try {
-            val uri = Uri.parse(fileUri)
+            val uri = fileUri.toUri()
             val fd: ParcelFileDescriptor? = try {
                 context.contentResolver.openFileDescriptor(uri, "r")
             } catch (_: Exception) {
@@ -69,7 +70,7 @@ fun PdfViewerScreen(
             val pages = mutableListOf<Bitmap>()
             for (i in 0 until renderer.pageCount) {
                 val page = renderer.openPage(i)
-                val bitmap = Bitmap.createBitmap(
+                val bitmap = createBitmap(
                     page.width * 2, page.height * 2,
                     Bitmap.Config.ARGB_8888
                 )

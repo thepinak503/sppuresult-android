@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Target SDK is already the latest public API (36). SDK 37 is pre-release. -->
+    <issue id="OldTargetApi" severity="ignore" />
+    <!-- Keeping current Gradle version; 9.5.1 available but not needed yet -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <!-- Widget layout is rendered via Glance framework, not RemoteViews/AppCompat -->
+    <issue id="UseCompatTextViewDrawableXml" severity="ignore" />
+    <!-- Launcher foreground icons are referenced by the system, not by code -->
+    <issue id="UnusedResources">
+        <ignore regexp="mipmap-.*/ic_launcher_foreground\.webp" />
+        <ignore regexp="widget_just_now|widget_status_indicator" />
+    </issue>
+</lint>

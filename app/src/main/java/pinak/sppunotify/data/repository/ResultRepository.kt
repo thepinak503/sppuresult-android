@@ -58,6 +58,20 @@ class ResultRepository @Inject constructor(
         db.dao.getCount()
     }
 
+    suspend fun markAsViewed(resultId: String) = withContext(Dispatchers.IO) {
+        db.dao.markAsViewed(resultId)
+    }
+
+    suspend fun toggleBookmark(resultId: String) = withContext(Dispatchers.IO) {
+        db.dao.toggleBookmark(resultId)
+    }
+
+    suspend fun isBookmarked(resultId: String): Boolean = withContext(Dispatchers.IO) {
+        db.dao.isBookmarked(resultId) ?: false
+    }
+
+    val bookmarkedResults: Flow<List<ResultEntity>> = db.dao.getBookmarkedResults()
+
     private fun ResultDto.toEntity() = ResultEntity(
         id = id,
         title = title,

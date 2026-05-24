@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import pinak.sppunotify.R
+import pinak.sppunotify.data.local.NotificationHistoryDao
 import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.data.repository.ResultRepository
 import pinak.sppunotify.data.repository.RemoteConfigRepository
@@ -33,13 +34,14 @@ class ResultSyncWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val repository: ResultRepository,
     private val remoteConfigRepository: RemoteConfigRepository,
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         setForeground(createForegroundInfo())
         val prefs = preferenceManager.preferencesFlow.first()
-        val notificationHelper = NotificationHelper(applicationContext)
+        val notificationHelper = NotificationHelper(applicationContext, notificationHistoryDao)
         
         if (!isNetworkAvailable()) {
             Log.w(TAG, "No network — skipping sync")
@@ -109,12 +111,21 @@ class ResultSyncWorker @AssistedInject constructor(
                 Log.e(TAG, "Config sync failed", e)
             }
 
-            // Update Glance Widget State
+            // Update Glance Widget State with result list
             try {
-                val latest = repository.results.first().firstOrNull()?.title ?: "No results"
+                val results = repository.results.first()
                 val status = repository.serverStatus.value
                 val now = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
                 
+                val items = results.take(12).map { result ->
+                    pinak.sppunotify.widget.WidgetResultItem(
+                        id = result.id,
+                        title = result.title,
+                        date = result.publishedDate,
+                    )
+                }
+                val encoded = items.map { it.encode() }.toSet()
+
                 val manager = androidx.glance.appwidget.GlanceAppWidgetManager(applicationContext)
                 val glanceIds = manager.getGlanceIds(pinak.sppunotify.widget.GlanceServerStatusWidget::class.java)
                 
@@ -123,8 +134,9 @@ class ResultSyncWorker @AssistedInject constructor(
                         prefs.toMutablePreferences().apply {
                             this[pinak.sppunotify.widget.GlanceWidgetKeys.statusLevel] = status?.statusLevel?.name ?: "HEALTHY"
                             this[pinak.sppunotify.widget.GlanceWidgetKeys.responseTime] = status?.responseTimeMs ?: 0L
-                            this[pinak.sppunotify.widget.GlanceWidgetKeys.latestResult] = latest
                             this[pinak.sppunotify.widget.GlanceWidgetKeys.lastUpdated] = now
+                            this[pinak.sppunotify.widget.GlanceWidgetKeys.totalResults] = results.size.toLong()
+                            this[pinak.sppunotify.widget.GlanceWidgetKeys.resultItems] = encoded
                         }
                     }
                 }

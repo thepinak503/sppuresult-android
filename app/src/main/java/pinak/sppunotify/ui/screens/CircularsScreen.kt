@@ -1,7 +1,7 @@
 package pinak.sppunotify.ui.screens
 
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -55,6 +55,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.R
 import pinak.sppunotify.data.remote.CircularRssItem
 import pinak.sppunotify.ui.components.AppEmptyState
 import pinak.sppunotify.ui.components.AppSearchBar
@@ -86,7 +88,7 @@ fun CircularsScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Circulars",
+                title = stringResource(R.string.nav_circulars),
                 navIcon = Icons.Default.Menu,
                 onNavClick = onMenuClick,
                 actions = {
@@ -110,7 +112,7 @@ fun CircularsScreen(
                     onQueryChange = { viewModel.onSearchQueryChange(it) },
                     expanded = searchActive,
                     onExpandedChange = { searchActive = it },
-                    placeholder = "Search circulars…",
+                    placeholder = stringResource(R.string.search_placeholder),
                 )
 
                 if (!searchActive) {
@@ -191,7 +193,7 @@ fun CircularsScreen(
                                         item = item,
                                         modifier = Modifier.animateItem()
                                     ) {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
+                                        val intent = Intent(Intent.ACTION_VIEW, item.link.toUri())
                                         context.safeStartActivity(
                                             intent,
                                             "No browser available to open circular"

@@ -1,5 +1,6 @@
 package pinak.sppunotify.data.remote
 
+import android.annotation.SuppressLint
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -22,6 +23,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
+@SuppressLint("CustomX509TrustManager", "TrustAllX509TrustManager")
 @Singleton
 class ResultScraper @Inject constructor() {
 

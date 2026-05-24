@@ -24,9 +24,24 @@ class WorkManagerHelper @Inject constructor(
 
     fun updateSyncWork(preferences: UserPreferences) {
         if (preferences.notificationsEnabled) {
-            scheduleResultSync(preferences.resultSyncInterval)
-            scheduleRevalSync(preferences.revalSyncInterval)
-            scheduleExamDateSync(preferences.examDateSyncInterval)
+            // Schedule per-screen based on individual toggles
+            if (preferences.syncResultsEnabled) {
+                scheduleResultSync(preferences.resultSyncInterval)
+            } else {
+                workManager.cancelUniqueWork(RESULT_SYNC_WORK_NAME)
+            }
+            
+            if (preferences.syncRevalEnabled) {
+                scheduleRevalSync(preferences.revalSyncInterval)
+            } else {
+                workManager.cancelUniqueWork(REVAL_SYNC_WORK_NAME)
+            }
+            
+            if (preferences.syncExamDatesEnabled) {
+                scheduleExamDateSync(preferences.examDateSyncInterval)
+            } else {
+                workManager.cancelUniqueWork(EXAM_DATE_SYNC_WORK_NAME)
+            }
         } else {
             cancelAllSync()
         }
@@ -124,4 +139,19 @@ class WorkManagerHelper @Inject constructor(
         workManager.cancelUniqueWork(REVAL_SYNC_WORK_NAME)
         workManager.cancelUniqueWork(EXAM_DATE_SYNC_WORK_NAME)
     }
+
+    /** Get sync status info for dashboard */
+    fun getSyncStatus(): SyncStatus {
+        return SyncStatus(
+            isResultSyncScheduled = workManager.getWorkInfosForUniqueWork(RESULT_SYNC_WORK_NAME).get().isNotEmpty(),
+            isRevalSyncScheduled = workManager.getWorkInfosForUniqueWork(REVAL_SYNC_WORK_NAME).get().isNotEmpty(),
+            isExamDateSyncScheduled = workManager.getWorkInfosForUniqueWork(EXAM_DATE_SYNC_WORK_NAME).get().isNotEmpty()
+        )
+    }
+
+    data class SyncStatus(
+        val isResultSyncScheduled: Boolean,
+        val isRevalSyncScheduled: Boolean,
+        val isExamDateSyncScheduled: Boolean
+    )
 }

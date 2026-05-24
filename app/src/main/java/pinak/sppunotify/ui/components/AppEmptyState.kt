@@ -30,10 +30,10 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun AppEmptyState(
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     message: String,
     subMessage: String = "Try clearing filters or pulling down to refresh",
-    modifier: Modifier = Modifier,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "empty")
     val pulse by infiniteTransition.animateFloat(

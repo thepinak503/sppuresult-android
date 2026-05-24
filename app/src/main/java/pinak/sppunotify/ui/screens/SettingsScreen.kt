@@ -8,7 +8,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
+import androidx.core.net.toUri
 import pinak.sppunotify.util.safeStartActivity
 import pinak.sppunotify.data.local.UserPreferences
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +48,7 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextButton
@@ -80,10 +83,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.R
+import androidx.appcompat.app.AppCompatDelegate
+import pinak.sppunotify.util.LocaleHelper
 import pinak.sppunotify.ui.theme.ThemeMode
 import pinak.sppunotify.ui.components.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("BatteryLife")
 @Composable
 fun SettingsScreen(
     scrollState: androidx.compose.foundation.ScrollState = rememberScrollState(),
@@ -141,8 +149,8 @@ fun SettingsScreen(
                             Icon(Icons.Default.Sync, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(12.dp))
                             Column {
-                                Text("Background Sync", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text("Periodically check for new results", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.bg_sync_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.bg_sync_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                         Switch(
@@ -199,7 +207,7 @@ fun SettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(10.dp))
-                            Text("Saved Profiles", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.saved_profiles), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
                         
                         var showAddDialog by remember { mutableStateOf(false) }
@@ -276,7 +284,7 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                         Spacer(Modifier.width(10.dp))
-                        Text("Smart Watchlist", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.smart_watchlist), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text("Only get notifications for results matching these keywords. Leave empty to get all notifications.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -327,7 +335,7 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.DarkMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(10.dp))
-                        Text("App Theme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.app_theme), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
                     ThemeMode.entries.forEach { mode ->
@@ -335,14 +343,26 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth().clickable {
                                 themeMode = mode
                                 viewModel.updateThemeMode(mode.name)
-                                (context as? Activity)?.recreate()
+                                // Remove manual recreate() - Compose handles theme changes natively
+                                // and AppCompatDelegate takes over for system bars
+                                when(mode) {
+                                    ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                                    ThemeMode.DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                                    ThemeMode.SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                                    ThemeMode.BLACK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                                }
                             }.padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(selected = themeMode == mode, onClick = {
                                 themeMode = mode
                                 viewModel.updateThemeMode(mode.name)
-                                (context as? Activity)?.recreate()
+                                when(mode) {
+                                    ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                                    ThemeMode.DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                                    ThemeMode.SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                                    ThemeMode.BLACK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                                }
                             })
                             Spacer(Modifier.width(8.dp))
                             Icon(
@@ -358,11 +378,47 @@ fun SettingsScreen(
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(text = when (mode) {
-                                ThemeMode.SYSTEM -> "System default"
-                                ThemeMode.LIGHT -> "Light"
-                                ThemeMode.DARK -> "Dark"
-                                ThemeMode.BLACK -> "Pitch Black (OLED)"
+                                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                                ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                                ThemeMode.BLACK -> stringResource(R.string.theme_black)
                             }, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+
+            // Language Selector
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(10.dp))
+                        Text(stringResource(R.string.app_language), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    listOf(
+                        "en" to "English",
+                        "mr" to "मराठी (Marathi)"
+                    ).forEach { (code, label) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                viewModel.updateAppLanguage(code)
+                                // setLocale handles Activity recreation automatically
+                                LocaleHelper.setLocale(context, code)
+                            }.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = userPreferences.appLanguage == code, onClick = {
+                                viewModel.updateAppLanguage(code)
+                                LocaleHelper.setLocale(context, code)
+                            })
+                            Spacer(Modifier.width(8.dp))
+                            Text(text = label, style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
@@ -383,7 +439,7 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.BatteryFull, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(10.dp))
-                        Text("Battery Optimization", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.battery_opt), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -395,10 +451,8 @@ fun SettingsScreen(
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:${context.packageName}"))
-                                context.safeStartActivity(intent)
-                            }
+                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, "package:${context.packageName}".toUri())
+                            context.safeStartActivity(intent)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)

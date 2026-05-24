@@ -190,6 +190,18 @@ class HomeViewModel @Inject constructor(
         data class ShowErrorDialog(val title: String, val message: String) : UiEvent()
     }
 
+    fun toggleBookmark(resultId: String) {
+        viewModelScope.launch {
+            repository.toggleBookmark(resultId)
+        }
+    }
+
+    fun markAsViewed(resultId: String) {
+        viewModelScope.launch {
+            repository.markAsViewed(resultId)
+        }
+    }
+
     companion object {
         private val WHITESPACE_REGEX = Regex("\\s+")
     }

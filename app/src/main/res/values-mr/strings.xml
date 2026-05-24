@@ -1,0 +1,141 @@
+<resources>
+    <string name="app_name">SPPU निकाल सूचना</string>
+    <string name="disclaimer_title">अस्वीकरण</string>
+    <string name="disclaimer_message">हे ॲप्लिकेशन सावित्रीबाई फुले पुणे विद्यापीठ (SPPU) शी संलग्न, संबंधित, अधिकृत किंवा कोणत्याही प्रकारे अधिकृतपणे जोडलेले नाही.\n\nहे एक स्वतंत्र, समुदायाद्वारे विकसित केलेले ओपन सोर्स ॲप्लिकेशन आहे.</string>
+    <string name="disclaimer_ok">ठीक आहे</string>
+    <string name="settings_title">सेटिंग्ज</string>
+    <string name="bg_sync_title">पार्श्वभूमी सिंक</string>
+    <string name="bg_sync_desc">नवीन निकालांसाठी वेळोवेळी तपासा</string>
+    <string name="sync_service_channel_name">पार्श्वभूमी सिंक</string>
+    <string name="sync_service_channel_desc">पार्श्वभूमी निकाल सिंक सेवा</string>
+    <string name="sync_service_notification_title">निकाल सिंक होत आहेत</string>
+    <string name="sync_service_notification_text">नवीन SPPU निकालांसाठी तपासत आहे</string>
+
+    <string name="widget_loading">निकाल लोड होत आहेत…</string>
+    <string name="widget_just_now">आत्ताच</string>
+    <string name="widget_status_indicator">सर्व्हर स्थिती निर्देशक</string>
+
+    <!-- Navigation -->
+    <string name="nav_results">निकाल</string>
+    <string name="nav_reval">पुनर्मूल्यांकन</string>
+    <string name="nav_circulars">परिपत्रके</string>
+    <string name="nav_exam_dates">परीक्षा तारखा</string>
+    <string name="nav_calculator">कॅल्क्युलेटर</string>
+    <string name="nav_vault">व्हॉल्ट</string>
+    <string name="nav_links">दुवे</string>
+    <string name="nav_about">माहिती</string>
+
+    <!-- Common UI -->
+    <string name="search_placeholder">येथे शोधा...</string>
+    <string name="pull_to_refresh">पुन्हा लोड करण्यासाठी खाली ओढा</string>
+    <string name="retry">पुन्हा प्रयत्न करा</string>
+    <string name="ok">ठीक आहे</string>
+    <string name="cancel">रद्द करा</string>
+    <string name="refresh">रिफ्रेश</string>
+    <string name="updated_at">अपडेट केले: %1$s</string>
+    <string name="results_count">%1$d निकाल</string>
+    <string name="courses_count">%1$d कोर्सेस</string>
+
+    <!-- HomeScreen -->
+    <string name="sort_by">निकाल यानुसार लावा</string>
+    <string name="rec_depts">शिफारस केलेले विभाग</string>
+    <string name="instant_results">झटपट निकाल</string>
+    <string name="no_matches">\"%1$s\" साठी कोणतेही निकाल मिळाले नाहीत</string>
+    <string name="no_dept_results">%1$s विभागासाठी निकाल नाहीत</string>
+    <string name="no_results_found">निकाल सापडले नाहीत.</string>
+    <string name="check_status">स्थिती तपासा</string>
+    <string name="copy_title">शीर्षक कॉपी करा</string>
+    <string name="share">शेअर करा</string>
+    <string name="bookmark">बुकमार्क करा</string>
+    <string name="remove_bookmark">बुकमार्क काढा</string>
+    <string name="mark_as_read">वाचलेले म्हणून चिन्हांकित करा</string>
+
+    <!-- ExamDates -->
+    <string name="exam_dates_title">परीक्षा तारखा</string>
+    <string name="starts">सुरू होते: %1$s</string>
+    <string name="end_date">अंतिम तारीख</string>
+    <string name="with_late_fee">विलंब शुल्कासह</string>
+
+    <!-- Settings -->
+    <string name="saved_profiles">जतन केलेले प्रोफाइल्स</string>
+    <string name="smart_watchlist">स्मार्ट वॉचलिस्ट</string>
+    <string name="app_theme">ॲप थीम</string>
+    <string name="battery_opt">बॅटरी ऑप्टिमायझेशन</string>
+    <string name="app_language">ॲपची भाषा</string>
+    <string name="theme_system">सिस्टम डिफॉल्ट</string>
+    <string name="theme_light">लाइट</string>
+    <string name="theme_dark">डार्क</string>
+    <string name="theme_black">पिच ब्लॅक (OLED)</string>
+
+    <!-- About Screen -->
+    <string name="about_title">माहिती</string>
+    <string name="dev_name">पिनाक धाबू</string>
+    <string name="dev_title">अँड्रॉइड डेव्हलपर आणि FOSS उत्साही</string>
+    <string name="github">गिटहब (GitHub)</string>
+    <string name="about_app_title">SPPU निकाल सूचना बद्दल</string>
+    <string name="about_app_desc_1">SPPU निकाल सूचना हे एक </string>
+    <string name="about_app_desc_2">विनामूल्य आणि मुक्त स्रोत (FOSS)</string>
+    <string name="about_app_desc_3"> अँड्रॉइड ॲप्लिकेशन आहे जे केवळ </string>
+    <string name="about_app_desc_4">सावित्रीबाई फुले पुणे विद्यापीठ (SPPU)</string>
+    <string name="about_app_desc_5"> च्या विद्यार्थ्यांसाठी तयार केले गेले आहे.\n\nहे ॲप अधिकृत SPPU ऑनलाइन निकाल पोर्टल (</string>
+    <string name="about_app_desc_6">) वरून माहिती घेते आणि खालील सेवा पुरवते:</string>
+    <string name="feature_1">सर्व प्रकाशित परीक्षा निकाल पहा</string>
+    <string name="feature_2">विभागानुसार फिल्टर करा (FE, SE, TE, BE, MBA, MCA, इ.)</string>
+    <string name="feature_3">सीट नंबर + कॅप्चा पडताळणीद्वारे वैयक्तिक निकाल पहा</string>
+    <string name="feature_4">निकालाच्या पीडीएफ तुमच्या डिव्हाइसवर डाउनलोड करा</string>
+
+    <string name="not_official_title">अधिकृत ॲप नाही</string>
+    <string name="not_official_desc_1">हे ॲप्लिकेशन सावित्रीबाई फुले पुणे विद्यापीठ (SPPU) किंवा त्याच्या कोणत्याही उपकंपन्या, विभाग किंवा संलग्न संस्थांशी संबंधित, अधिकृत किंवा कोणत्याही प्रकारे अधिकृतपणे जोडलेले नाही.\n\n</string>
+    <string name="not_official_desc_2">हे एक स्वतंत्र, समुदायाद्वारे विकसित केलेले ॲप्लिकेशन आहे. अधिकृत SPPU वेबसाइट आहे: </string>
+
+    <string name="privacy_title">डेटा गोपनीयता आणि हाताळणी</string>
+    <string name="privacy_desc_1">या ॲपमध्ये कोणता डेटा येतो:</string>
+    <string name="privacy_desc_2">• SPPU च्या पोर्टलवरून मिळालेली निकालांची यादी\n• तुमचा सीट नंबर आणि आईचे नाव (निकाल पाहण्यासाठी तुम्ही प्रविष्ट केलेले)\n• SPPU च्या सर्व्हरवरून कॅप्चा प्रतिमा\n\n</string>
+    <string name="privacy_desc_3">तुमच्या डिव्हाइसवर स्थानिक पातळीवर काय साठवले जाते:</string>
+    <string name="privacy_desc_4">\n• स्थानिक SQLite डेटाबेसमध्ये निकालाची मूलभूत माहिती (शीर्षक, तारीख, URL)\n• डाउनलोड केलेल्या निकालाच्या फाइल्स (तुमच्या डाउनलोड फोल्डरमध्ये)\n\n</string>
+    <string name="privacy_desc_5">तिसऱ्या पक्षांना काय कधीही पाठवले जात नाही:</string>
+    <string name="privacy_desc_6">\n• तुमचा सीट नंबर\n• तुमच्या आईचे नाव\n• तुमचे डाउनलोड केलेले निकाल\n• कोणतीही वैयक्तिक माहिती\n\n</string>
+    <string name="privacy_desc_7">सर्व संवाद केवळ तुमचे डिव्हाइस आणि SPPU चे अधिकृत सर्व्हर यांच्यातच होतो. कोणताही डेटा कोणत्याही डेव्हलपर, तृतीय-पक्ष किंवा विश्लेषणात्मक सर्व्हरला पाठवला जात नाही.</string>
+
+    <string name="tech_details_title">तांत्रिक तपशील:</string>
+    <string name="tech_details_desc">• केवळ onlineresults.unipune.ac.in ला सुरक्षित (HTTPS) कनेक्शन\n• सुसंगततेसाठी डेस्कटॉप ब्राउझरसारखे वापरकर्ता-एजंट (User-Agent)\n• कुकीज आणि सेशन डेटा केवळ मेमरीमध्ये साठवला जातो (प्रत्येक सेशनसाठी)\n• कोणतेही ट्रॅकिंग कुकीज किंवा ॲनालिटिक्स नाहीत\n\n</string>
+    <string name="local_storage_title">स्थानिक संचयन:</string>
+    <string name="local_storage_desc">• रूम SQLite डेटाबेस: कॅशिंगसाठी निकालाची शीर्षके, URL, तारखा समाविष्ट आहेत\n• मीडियास्टोअर/डाउनलोड्स: तुम्ही डाउनलोड केलेले निकालाचे पीडीएफ\n• कोणतीही कायमस्वरूपी क्रेडेन्शियल्स साठवली जात नाहीत\n• तुम्ही अँड्रॉइड सेटिंग्ज → ॲप्स द्वारे सर्व ॲप डेटा साफ करू शकता</string>
+    <string name="show_more">तांत्रिक तपशील दाखवा</string>
+    <string name="show_less">कमी दाखवा</string>
+
+    <string name="legal_title">कायदेशीर अस्वीकरण</string>
+    <string name="legal_desc_1">१. सामग्रीची मालकी\n</string>
+    <string name="legal_desc_2">या ॲपद्वारे प्रदर्शित केलेले सर्व परीक्षेचे निकाल, परिपत्रके, अधिसूचना आणि संबंधित सामग्री ही </string>
+    <string name="legal_desc_3">सावित्रीबाई फुले पुणे विद्यापीठ (SPPU)</string>
+    <string name="legal_desc_4"> ची अनन्य बौद्धिक संपदा आहे. हे ॲप केवळ सार्वजनिकरित्या उपलब्ध सामग्रीसाठी ब्राउझर/व्ह्यूअर म्हणून कार्य करते.\n\n</string>
+    <string name="legal_desc_5">२. वाजवी वापराचा उद्देश\n</string>
+    <string name="legal_desc_6">हे ॲप्लिकेशन केवळ </string>
+    <string name="legal_desc_7">शैक्षणिक, गैर-व्यावसायिक उद्देशांसाठी</string>
+    <string name="legal_desc_8"> प्रदान केले आहे. विद्यार्थ्यांना अधिकृत पोर्टलवर मॅन्युअली न जाता सोयीस्करपणे त्यांचे निकाल पाहता यावेत यासाठी हे तयार केले आहे.\n\n</string>
+    <string name="legal_desc_9">३. माहितीची अचूकता\n</string>
+    <string name="legal_desc_10">आम्ही अचूक आणि अद्ययावत माहिती प्रदर्शित करण्याचा प्रयत्न करत असलो तरी, हे ॲप </string>
+    <string name="legal_desc_11">प्रदर्शित केलेल्या कोणत्याही डेटाच्या अचूकतेची, पूर्णतेची किंवा वेळेची हमी देत नाही</string>
+    <string name="legal_desc_12">. निकाल पडताळणीसाठी अधिकृत SPPU पोर्टल नेहमीच एकमेव अधिकृत स्रोत मानले जाईल.\n\n</string>
+    <string name="copyright_notice_title">कॉपीराइट नोटीस\n</string>
+    <string name="copyright_notice_desc">कॉपीराइट © २०२६ सावित्रीबाई फुले पुणे विद्यापीठ. सर्व हक्क राखीव. या ॲपद्वारे प्रदर्शित केलेली सर्व निकाल सामग्री, लोगो आणि विद्यापीठाशी संबंधित ट्रेडमार्क ही SPPU ची मालमत्ता आहे.</string>
+
+    <string name="legal_full_title">पूर्ण कायदेशीर अस्वीकरण दाखवा</string>
+    <string name="legal_4_title">४. दायित्वाची मर्यादा\n</string>
+    <string name="legal_4_desc">• कोणतेही प्रत्यक्ष, अप्रत्यक्ष किंवा परिणामी नुकसान\n• प्रदर्शित माहितीमधील विसंगती किंवा चुका\n• सर्व्हर डाउन असणे किंवा नेटवर्क कनेक्टिव्हिटी समस्या\n• अनधिकृत प्रवेश किंवा डेटा इंटरसेप्शन (HTTPS वापरले जात असले तरी कोणतीही प्रणाली १००% सुरक्षित नसते)\n• या ॲपमधील माहितीवर आधारित घेतलेले निर्णय\n\n</string>
+    <string name="legal_5_title">५. बाह्य दुवे\n</string>
+    <string name="legal_5_desc">हे ॲप बाह्य SPPU पोर्टल URL प्रदर्शित करू शकते किंवा त्यांच्याशी लिंक करू शकते. डेव्हलपर बाह्य वेबसाइटच्या सामग्रीसाठी, त्यामधील बदलांसाठी किंवा त्यांच्या गोपनीयतेसाठी जबाबदार नाही.\n\n</string>
+    <string name="legal_6_title">६. कोणतीही हमी नाही\n</string>
+    <string name="legal_6_desc">हे सॉफ्टवेअर कोणत्याही प्रकारच्या वॉरंटीशिवाय जसे आहे तसे प्रदान केले आहे. याच्या गुणवत्तेबाबत आणि कामगिरीबाबतचा संपूर्ण धोका तुमच्यावर आहे.\n\n</string>
+    <string name="legal_7_title">७. वापरकर्त्याच्या जबाबदाऱ्या\n</string>
+    <string name="legal_7_desc">हे ॲप वापरून, तुम्ही सहमत आहात की:\n• तुम्ही हे ॲप केवळ कायदेशीर शैक्षणिक कारणांसाठी वापराल\n• तुम्ही निकाल पाहण्यासाठी तुमचा सीट नंबर आणि आईचे नाव प्रविष्ट करणे आवश्यक आहे हे समजून घेता - हा डेटा केवळ SPPU च्या सर्व्हरवर पाठविला जातो\n• तुम्ही अधिकृत SPPU चॅनेलद्वारे महत्त्वपूर्ण माहितीची पडताळणी कराल\n• तुम्ही या ॲपद्वारे मिळालेल्या कोणत्याही डेटाचा गैरवापर करणार नाही\n\n</string>
+    <string name="legal_8_title">८. अस्वीकरणामध्ये बदल\n</string>
+    <string name="legal_8_desc">हे कायदेशीर अस्वीकरण पूर्वसूचनेशिवाय अद्यतनित केले जाऊ शकते. ॲपचा सतत वापर म्हणजे तुम्ही वर्तमान अस्वीकरण स्वीकारले आहे.\n\n</string>
+    <string name="legal_9_title">९. लागू कायदा\n</string>
+    <string name="legal_9_desc">हे अस्वीकरण आणि उद्भवणारे कोणतेही विवाद भारताच्या कायद्यानुसार चालवले जातील. कोणतीही कायदेशीर कार्यवाही पुणे, महाराष्ट्र येथील न्यायालयांच्या अखत्यारीत असेल.</string>
+
+    <string name="open_source_title">मुक्त स्रोत (Open Source)</string>
+    <string name="open_source_desc">SPPU निकाल सूचना हे विनामूल्य आणि मुक्त स्रोत सॉफ्टवेअर आहे. तुम्ही लागू असलेल्या मुक्त स्रोत परवाना अटींनुसार स्रोत कोड पाहण्यास, सुधारण्यास आणि वितरित करण्यास मुक्त आहात.</string>
+    <string name="version_text">आवृत्ती %1$s</string>
+    <string name="copyright_sppu">२०२६ सावित्रीबाई फुले पुणे विद्यापीठ</string>
+</resources>

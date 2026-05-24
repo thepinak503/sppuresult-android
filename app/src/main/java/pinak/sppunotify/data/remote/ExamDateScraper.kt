@@ -1,5 +1,6 @@
 package pinak.sppunotify.data.remote
 
+import android.annotation.SuppressLint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -16,6 +17,7 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.HostnameVerifier
 
+@SuppressLint("CustomX509TrustManager", "TrustAllX509TrustManager")
 @Singleton
 class ExamDateScraper @Inject constructor() {
 

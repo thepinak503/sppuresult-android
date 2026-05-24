@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,11 +43,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 import pinak.sppunotify.R
 import pinak.sppunotify.ui.theme.SppuAccent
 import pinak.sppunotify.ui.theme.SppuBlue
@@ -57,12 +61,12 @@ fun BrandSplashScreen(
     modifier: Modifier = Modifier
 ) {
     // Animation states
-    var logoScale by remember { mutableStateOf(0.6f) }
-    var logoAlpha by remember { mutableStateOf(0f) }
-    var textAlpha by remember { mutableStateOf(0f) }
+    var logoScale by remember { mutableFloatStateOf(0.6f) }
+    var logoAlpha by remember { mutableFloatStateOf(0f) }
+    var textAlpha by remember { mutableFloatStateOf(0f) }
     var textOffsetY by remember { mutableStateOf(40.dp) }
-    var loaderAlpha by remember { mutableStateOf(0f) }
-    var progress by remember { mutableStateOf(0f) }
+    var loaderAlpha by remember { mutableFloatStateOf(0f) }
+    var progress by remember { mutableFloatStateOf(0f) }
 
     // Animations
     val animatedScale by animateFloatAsState(
@@ -207,10 +211,11 @@ fun BrandSplashScreen(
             Spacer(modifier = Modifier.height(28.dp))
 
             // Animated Title Block
+            val density = LocalDensity.current
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .offset(y = animatedTextOffsetY)
+                    .offset { IntOffset(x = 0, y = -animatedTextOffsetY.roundToPx()) }
                     .alpha(animatedTextAlpha)
             ) {
                 Text(

@@ -2,6 +2,7 @@ package pinak.sppunotify.ui
 
 import android.app.Activity
 import android.content.Intent
+import androidx.compose.animation.*
 import pinak.sppunotify.util.safeStartActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -19,8 +20,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.FolderZip
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,18 +63,20 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.R
 import pinak.sppunotify.ui.screens.*
 
-sealed class Screen(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
-    object Home : Screen("home", "Results", Icons.AutoMirrored.Outlined.List, Icons.AutoMirrored.Filled.List)
-    object Revaluation : Screen("reval", "Reval", Icons.Outlined.Refresh, Icons.Filled.Refresh)
-    object Circulars : Screen("circulars", "Circulars", Icons.Outlined.Description, Icons.Default.Description)
-    object ExamDates : Screen("exam_dates", "Exam Dates", Icons.Outlined.Event, Icons.Filled.Event)
-    object Calculator : Screen("calculator", "Calc", Icons.Outlined.Calculate, Icons.Filled.Calculate)
-    object Vault : Screen("vault", "Vault", Icons.Outlined.FolderZip, Icons.Filled.FolderZip)
-    object Links : Screen("links", "Links", Icons.Outlined.Public, Icons.Filled.Public)
-    object Settings : Screen("settings", "Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
-    object About : Screen("about", "About", Icons.Outlined.Info, Icons.Filled.Info)
+sealed class Screen(val route: String, val labelRes: Int, val icon: ImageVector, val selectedIcon: ImageVector) {
+    object Home : Screen("home", R.string.nav_results, Icons.AutoMirrored.Outlined.List, Icons.AutoMirrored.Filled.List)
+    object Revaluation : Screen("reval", R.string.nav_reval, Icons.Outlined.Refresh, Icons.Filled.Refresh)
+    object Circulars : Screen("circulars", R.string.nav_circulars, Icons.Outlined.Description, Icons.Default.Description)
+    object ExamDates : Screen("exam_dates", R.string.nav_exam_dates, Icons.Outlined.Event, Icons.Filled.Event)
+    object Calculator : Screen("calculator", R.string.nav_calculator, Icons.Outlined.Calculate, Icons.Filled.Calculate)
+    object Vault : Screen("vault", R.string.nav_vault, Icons.Outlined.FolderZip, Icons.Filled.FolderZip)
+    object Links : Screen("links", R.string.nav_links, Icons.Outlined.Public, Icons.Filled.Public)
+    object Settings : Screen("settings", R.string.settings_title, Icons.Outlined.Settings, Icons.Filled.Settings)
+    object About : Screen("about", R.string.nav_about, Icons.Outlined.Info, Icons.Filled.Info)
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
@@ -168,7 +188,7 @@ fun MainScreen() {
                     items.forEach { screen ->
                         val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                         NavigationDrawerItem(
-                            label = { Text(text = screen.label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium) },
+                            label = { Text(text = stringResource(screen.labelRes), fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium) },
                             selected = selected,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
@@ -187,6 +207,49 @@ fun MainScreen() {
                             modifier = Modifier.padding(vertical = 2.dp)
                         )
                     }
+                    // 🔧 Quick Tools section
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                    Text(
+                        "Quick Tools",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Sync Dashboard", fontWeight = FontWeight.Medium) },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate("syncDashboard")
+                        },
+                        icon = { Icon(Icons.Default.Dashboard, contentDescription = "Sync Dashboard") },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Notification History", fontWeight = FontWeight.Medium) },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate("notificationHistory")
+                        },
+                        icon = { Icon(Icons.Default.History, contentDescription = "Notification History") },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
                     Spacer(Modifier.height(24.dp))
                 }
             }
@@ -319,7 +382,7 @@ private fun NavHostContent(
                 }
             )
         }
-        composable("settings") {
+        composable(Screen.Settings.route) {
             SettingsScreen(scrollState = settingsScrollState, onMenuClick = onMenuClick)
         }
         composable(Screen.About.route) {
@@ -338,7 +401,8 @@ private fun NavHostContent(
                     onOpenBrowser = { url -> context.safeStartActivity(Intent(Intent.ACTION_VIEW, url.toUri())) },
                     onViewInApp = { r -> navController.navigate("resultView/${r.id}") },
                     sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = this@composable
+                    animatedVisibilityScope = this@composable,
+                    viewModel = viewModel
                 )
             }
         }
@@ -362,6 +426,16 @@ private fun NavHostContent(
                 title = pdfTitle,
                 onBackClick = { navController.popBackStack() }
             )
+        }
+        composable(
+            route = "syncDashboard",
+        ) {
+            SyncDashboardScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(
+            route = "notificationHistory",
+        ) {
+            NotificationHistoryScreen(onBackClick = { navController.popBackStack() })
         }
     }
 }

@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ResultDao {
-    @Query("SELECT * FROM results ORDER BY publishedTimestamp DESC, fetchedAt DESC")
+    @Query("SELECT * FROM results ORDER BY isBookmarked DESC, publishedTimestamp DESC, fetchedAt DESC")
     fun getAllResults(): Flow<List<ResultEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -25,4 +25,16 @@ interface ResultDao {
 
     @Query("DELETE FROM results WHERE fetchedAt < :timestamp")
     suspend fun deleteOldResults(timestamp: Long)
+
+    @Query("UPDATE results SET isViewed = 1 WHERE id = :resultId")
+    suspend fun markAsViewed(resultId: String)
+
+    @Query("UPDATE results SET isBookmarked = CASE WHEN isBookmarked = 1 THEN 0 ELSE 1 END WHERE id = :resultId")
+    suspend fun toggleBookmark(resultId: String)
+
+    @Query("SELECT * FROM results WHERE isBookmarked = 1 ORDER BY publishedTimestamp DESC")
+    fun getBookmarkedResults(): Flow<List<ResultEntity>>
+
+    @Query("SELECT isBookmarked FROM results WHERE id = :resultId")
+    suspend fun isBookmarked(resultId: String): Boolean?
 }

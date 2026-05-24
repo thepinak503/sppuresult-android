@@ -22,6 +22,7 @@ android {
 
     androidResources {
         localeFilters += "en"
+        localeFilters += "mr"
     }
 
     buildTypes {
@@ -73,6 +74,7 @@ ksp {
 dependencies {
     // Core
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

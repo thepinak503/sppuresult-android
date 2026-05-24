@@ -33,6 +33,7 @@ class ResultWatchApp : Application(), Configuration.Provider {
         const val CHANNEL_SYNC_SERVICE = "background_sync"
         const val CHANNEL_REVAL = "reval_notifications"
         const val CHANNEL_EXAM_DATES = "exam_date_notifications"
+        const val CHANNEL_NEWS = "news_notifications"
     }
 
     @Inject
@@ -128,6 +129,18 @@ class ResultWatchApp : Application(), Configuration.Provider {
                     description = "Notifies when new exam form dates are updated"
                 }
                 notificationManager.createNotificationChannel(examDateChannel)
+            }
+
+            val existingNewsChannel = notificationManager.getNotificationChannel(CHANNEL_NEWS)
+            if (existingNewsChannel == null) {
+                val newsChannel = NotificationChannel(
+                    CHANNEL_NEWS,
+                    "App Announcements",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "News and updates about the app"
+                }
+                notificationManager.createNotificationChannel(newsChannel)
             }
         }
     }

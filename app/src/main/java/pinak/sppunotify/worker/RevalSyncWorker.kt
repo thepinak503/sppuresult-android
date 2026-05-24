@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import pinak.sppunotify.R
+import pinak.sppunotify.data.local.NotificationHistoryDao
 import pinak.sppunotify.data.repository.RevalRepository
 import pinak.sppunotify.util.NotificationHelper
 import kotlinx.coroutines.flow.first
@@ -31,7 +32,8 @@ class RevalSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val repository: RevalRepository,
-    private val preferenceManager: pinak.sppunotify.data.local.PreferenceManager
+    private val preferenceManager: pinak.sppunotify.data.local.PreferenceManager,
+    private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -48,7 +50,7 @@ class RevalSyncWorker @AssistedInject constructor(
 
             val newCourses = repository.checkForNewCourses()
             if (newCourses.isNotEmpty()) {
-                val helper = NotificationHelper(applicationContext)
+                val helper = NotificationHelper(applicationContext, notificationHistoryDao)
                 helper.showRevalNotification(newCourses.size)
             }
             rescheduleIfNeeded()

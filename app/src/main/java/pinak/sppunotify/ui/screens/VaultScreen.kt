@@ -1,7 +1,7 @@
 package pinak.sppunotify.ui.screens
 
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.fragment.app.FragmentActivity
 import pinak.sppunotify.util.BiometricHelper
 import pinak.sppunotify.util.safeStartActivity
@@ -32,6 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.R
 import pinak.sppunotify.data.local.DownloadedResultEntity
 import pinak.sppunotify.ui.components.AppEmptyState
 import pinak.sppunotify.ui.components.AppTopBar
@@ -71,7 +73,7 @@ fun VaultScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Vault",
+                title = stringResource(R.string.nav_vault),
                 navIcon = Icons.Default.Menu,
                 onNavClick = onMenuClick
             )
@@ -121,7 +123,7 @@ fun VaultScreen(
                         modifier = Modifier.animateItem(),
                         onOpen = {
                             val intent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(Uri.parse(res.filePath), res.mimeType)
+                                setDataAndType(res.filePath.toUri(), res.mimeType)
                                 flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                             }
                             context.safeStartActivity(intent, "No app available to open this file")

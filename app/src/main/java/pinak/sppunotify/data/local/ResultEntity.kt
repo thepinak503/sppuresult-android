@@ -15,5 +15,7 @@ data class ResultEntity(
     val patternName: String = "",
     val patternId: String = "",
     val department: String = "Other UG",
-    val fetchedAt: Long = System.currentTimeMillis()
+    val fetchedAt: Long = System.currentTimeMillis(),
+    val isViewed: Boolean = false,
+    val isBookmarked: Boolean = false,
 )

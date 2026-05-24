@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLocale
 import java.util.Locale
 
 enum class CalculationPattern(val label: String) {
@@ -136,7 +137,12 @@ fun CalculatorScreen(onMenuClick: () -> Unit) {
 
             OutlinedTextField(
                 value = gpaText,
-                onValueChange = { if (it.length <= 5) gpaText = it },
+                onValueChange = { newVal ->
+                    // Allow valid decimal numbers up to 4 chars + decimal point
+                    if (newVal.length <= 5 && (newVal.isEmpty() || newVal.matches(Regex("^\\d*\\.?\\d{0,2}$")))) {
+                        gpaText = newVal
+                    }
+                },
                 label = { Text("Enter Pointer (SGPA/CGPA)") },
                 placeholder = { Text("e.g. 8.54") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -158,7 +164,7 @@ fun CalculatorScreen(onMenuClick: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
-                            text = String.format(Locale.getDefault(), "%.2f%%", percentage),
+                            text = String.format(LocalLocale.current.platformLocale, "%.2f%%", percentage),
                             style = MaterialTheme.typography.displayMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary

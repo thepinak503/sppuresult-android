@@ -1,7 +1,6 @@
 package pinak.sppunotify
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,6 +14,8 @@ import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,10 +24,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
-import pinak.sppunotify.ui.screens.BrandSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,17 +64,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.collectAsState
+import pinak.sppunotify.ui.screens.OnboardingScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.ui.MainScreen
+import pinak.sppunotify.util.LocaleHelper
 import pinak.sppunotify.ui.theme.SPPUResultWatchTheme
 import pinak.sppunotify.ui.theme.ThemeMode
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var preferenceManager: PreferenceManager
@@ -111,6 +112,12 @@ class MainActivity : FragmentActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         
+        // Apply locale for proper resource loading (Injected preferenceManager is available now)
+        runBlocking {
+            val prefs = preferenceManager.preferencesFlow.first()
+            LocaleHelper.setLocale(this@MainActivity, prefs.appLanguage)
+        }
+        
         splashScreen.setOnExitAnimationListener { splashProvider ->
             val zoomX = android.view.animation.AnimationUtils.loadAnimation(this, android.R.anim.fade_out)
             splashProvider.view.startAnimation(zoomX)
@@ -127,31 +134,30 @@ class MainActivity : FragmentActivity() {
             Log.w(TAG, "Failed to set isFrameRatePowerSavingsBalanced: ${e.message}")
         }
 
-        val themeMode = runBlocking {
-            try {
-                ThemeMode.valueOf(preferenceManager.preferencesFlow.first().themeMode)
-            } catch (_: Exception) {
-                ThemeMode.SYSTEM
+        val config = runBlocking {
+            val prefs = preferenceManager.preferencesFlow.first()
+            
+            // Sync delegates once on startup
+            LocaleHelper.setLocale(this@MainActivity, prefs.appLanguage)
+            val mode = try { ThemeMode.valueOf(prefs.themeMode) } catch (_: Exception) { ThemeMode.SYSTEM }
+            when(mode) {
+                ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                ThemeMode.DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                ThemeMode.SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                ThemeMode.BLACK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             }
+            prefs
+        }
+
+        val themeMode = try {
+            ThemeMode.valueOf(config.themeMode)
+        } catch (_: Exception) {
+            ThemeMode.SYSTEM
         }
 
         setContent {
             SPPUResultWatchTheme(themeMode = themeMode) {
-                var showSplash by remember { mutableStateOf(true) }
-                AnimatedContent(
-                    targetState = showSplash,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(400)) togetherWith
-                                fadeOut(animationSpec = tween(400))
-                    },
-                    label = "SplashTransition"
-                ) { isSplash ->
-                    if (isSplash) {
-                        BrandSplashScreen(onAnimationComplete = { showSplash = false })
-                    } else {
-                        AppSetupFlow()
-                    }
-                }
+                AppSetupFlow()
             }
         }
     }
@@ -159,11 +165,22 @@ class MainActivity : FragmentActivity() {
     @Composable
     private fun AppSetupFlow() {
         val context = LocalContext.current
+        val prefs by preferenceManager.preferencesFlow.collectAsState(initial = null)
+        
         var isOnline by remember { mutableStateOf(isOnline()) }
         var disclaimerAccepted by remember {
             mutableStateOf(context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE).getBoolean("disclaimer_accepted", false))
         }
         var showPermissionDialog by remember { mutableStateOf(false) }
+
+        if (prefs == null) return // Wait for initial prefs
+
+        if (!prefs!!.onboardingCompleted) {
+            OnboardingScreen(onFinished = {
+                runBlocking { preferenceManager.updateOnboardingCompleted(true) }
+            })
+            return
+        }
 
         LaunchedEffect(disclaimerAccepted) {
             if (disclaimerAccepted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -202,7 +219,7 @@ class MainActivity : FragmentActivity() {
                     iconColor = MaterialTheme.colorScheme.error,
                     confirmLabel = "Agree",
                     onConfirm = {
-                        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE).edit().putBoolean("disclaimer_accepted", true).apply()
+                        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE).edit { putBoolean("disclaimer_accepted", true) }
                         disclaimerAccepted = true
                     },
                     cancelLabel = "Exit",

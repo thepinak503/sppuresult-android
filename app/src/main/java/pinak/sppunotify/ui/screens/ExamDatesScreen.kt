@@ -12,8 +12,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.graphics.Color
-import pinak.sppunotify.data.remote.StatusLevel
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -23,10 +21,13 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.R
 import pinak.sppunotify.data.local.ExamDateEntity
 import pinak.sppunotify.ui.components.AppEmptyState
 import pinak.sppunotify.ui.components.AppSearchBar
 import pinak.sppunotify.ui.components.AppTopBar
+import pinak.sppunotify.ui.components.ServerStatusBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,36 +49,11 @@ fun ExamDatesScreen(
                 titleContent = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Exam Dates",
+                            text = stringResource(R.string.exam_dates_title),
                             fontWeight = FontWeight.ExtraBold,
                             style = MaterialTheme.typography.titleLarge,
                         )
-                        serverStatus?.let { status ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Circle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(8.dp),
-                                    tint = when (status.statusLevel) {
-                                        StatusLevel.HEALTHY -> Color(0xFF4CAF50)
-                                        StatusLevel.SLOW -> Color(0xFFFFC107)
-                                        StatusLevel.BUSY -> Color(0xFFFF9800)
-                                        StatusLevel.DOWN -> Color(0xFFF44336)
-                                    }
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = when (status.statusLevel) {
-                                        StatusLevel.HEALTHY -> "Online (${status.responseTimeMs}ms)"
-                                        StatusLevel.SLOW -> "Slow (${status.responseTimeMs}ms)"
-                                        StatusLevel.BUSY -> "Busy"
-                                        StatusLevel.DOWN -> "Down"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                        ServerStatusBar(serverStatus = serverStatus)
                     }
                 },
                 navIcon = Icons.Default.Menu,
@@ -103,7 +79,7 @@ fun ExamDatesScreen(
                     onQueryChange = { viewModel.onSearchQueryChange(it) },
                     expanded = searchActive,
                     onExpandedChange = { searchActive = it },
-                    placeholder = "Search courses…",
+                    placeholder = stringResource(R.string.search_placeholder),
                 )
 
                 if (!searchActive) {
@@ -232,7 +208,7 @@ fun ExamDateCard(
             ) {
                 StatusBadge(item.status)
                 Text(
-                    text = "Starts: ${item.startDate}",
+                    text = stringResource(R.string.starts, item.startDate),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -243,8 +219,8 @@ fun ExamDateCard(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
             Spacer(modifier = Modifier.height(12.dp))
-            DateInfoRow("End Date", item.endDateWithoutLateFee)
-            DateInfoRow("With Late Fee", item.endDateWithLateFee)
+            DateInfoRow(stringResource(R.string.end_date), item.endDateWithoutLateFee)
+            DateInfoRow(stringResource(R.string.with_late_fee), item.endDateWithLateFee)
         }
     }
 }

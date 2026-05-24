@@ -3,6 +3,7 @@ package pinak.sppunotify.ui.screens
 import android.content.Intent
 import androidx.compose.animation.*
 import pinak.sppunotify.util.safeStartActivity
+import pinak.sppunotify.util.ResultImageShare
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.PictureAsPdf
+import pinak.sppunotify.util.ResultPdfExport
 import pinak.sppunotify.data.local.ResultEntity
 import pinak.sppunotify.ui.theme.DeptColors
 
@@ -41,9 +46,17 @@ fun ResultDetailsScreen(
     onViewInApp: (ResultEntity) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    viewModel: DetailsViewModel? = null,
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    var showShareOptions by remember { mutableStateOf(false) }
+
+    // Mark as viewed on entry
+    LaunchedEffect(result.id) {
+        viewModel?.markAsViewed()
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -62,17 +75,7 @@ fun ResultDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "Check out this SPPU Result: ${result.title}\nLink: ${result.url}")
-                                type = "text/plain"
-                            }
-                            val shareIntent = Intent.createChooser(sendIntent, null)
-                            context.safeStartActivity(shareIntent)
-                        },
-                    ) {
+                    IconButton(onClick = { showShareOptions = true }) {
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
                 },
@@ -80,6 +83,69 @@ fun ResultDetailsScreen(
             )
         }
     ) { padding ->
+        if (showShareOptions) {
+            ModalBottomSheet(
+                onDismissRequest = { showShareOptions = false },
+                dragHandle = { BottomSheetDefaults.DragHandle() },
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Result Options", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                    
+                    ListItem(
+                        headlineContent = { Text("Share as Text/Link") },
+                        leadingContent = { Icon(Icons.Default.Share, contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, "Check out this SPPU Result: ${result.title}\nLink: ${result.url}")
+                                type = "text/plain"
+                            }
+                            context.safeStartActivity(Intent.createChooser(sendIntent, null))
+                            showShareOptions = false
+                        }
+                    )
+                    
+                    ListItem(
+                        headlineContent = { Text("Export as PDF") },
+                        supportingContent = { Text("Save as printable marksheet") },
+                        leadingContent = { Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                        modifier = Modifier.clickable {
+                            val uri = ResultPdfExport.exportToPdf(context, result)
+                            if (uri != null) {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_VIEW
+                                    setDataAndType(uri, "application/pdf")
+                                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "View Result PDF"))
+                            }
+                            showShareOptions = false
+                        }
+                    )
+
+                    ListItem(
+                        headlineContent = { Text("Share as Image") },
+                        supportingContent = { Text("Premium result card") },
+                        leadingContent = { Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        modifier = Modifier.clickable {
+                            ResultImageShare.shareAsImage(
+                                context = context,
+                                title = result.title,
+                                department = result.department,
+                                publishedDate = result.publishedDate,
+                                patternName = result.patternName
+                            )
+                            showShareOptions = false
+                        }
+                    )
+                }
+            }
+        }
         val transition = rememberInfiniteTransition(label = "pulse")
         val pulseScale by transition.animateFloat(
             initialValue = 1f,

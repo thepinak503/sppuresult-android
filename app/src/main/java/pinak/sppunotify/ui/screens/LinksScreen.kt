@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
@@ -61,19 +60,10 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
     
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Important Links", fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    if (isTopLevel) {
-                        IconButton(onClick = onBackClick) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
-                        }
-                    } else {
-                        IconButton(onClick = onBackClick) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    }
-                }
+            pinak.sppunotify.ui.components.AppTopBar(
+                title = "Important Links",
+                navIcon = Icons.Default.Menu,
+                onNavClick = onBackClick
             )
         }
     ) { padding ->

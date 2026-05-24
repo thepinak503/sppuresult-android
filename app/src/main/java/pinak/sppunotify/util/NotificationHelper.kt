@@ -7,10 +7,20 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import pinak.sppunotify.MainActivity
 import pinak.sppunotify.R
+import pinak.sppunotify.data.local.NotificationHistoryDao
+import pinak.sppunotify.data.local.NotificationHistoryEntity
 
-class NotificationHelper(private val context: Context) {
+class NotificationHelper(
+    private val context: Context,
+    private val historyDao: NotificationHistoryDao? = null
+) {
+    private val notificationScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -27,6 +37,7 @@ class NotificationHelper(private val context: Context) {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifies when new results are published"
+                setShowBadge(true)
             }
             
             val downloadChannel = NotificationChannel(
@@ -94,6 +105,7 @@ class NotificationHelper(private val context: Context) {
             }
             .build()
         notificationManager.notify(NEWS_NOTIFICATION_ID, notification)
+        trackNotification("NEWS", title, message)
     }
 
     fun showRevalNotification(count: Int) {
@@ -108,11 +120,13 @@ class NotificationHelper(private val context: Context) {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("New Revaluation Courses")
             .setContentText("$count new revaluation course(s) published")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$count new revaluation course(s) have been published. Tap to view."))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
         notificationManager.notify(REVAL_NOTIFICATION_ID, notification)
+        trackNotification("REVAL", "New Revaluation Courses", "$count course(s)")
     }
 
     fun showResultNotification(results: List<Pair<String, String>>) {
@@ -126,10 +140,13 @@ class NotificationHelper(private val context: Context) {
 
         if (results.size == 1) {
             val (title, message) = results.first()
+            // Rich expandable notification with dept-style formatting
+            val bigText = "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
             val notification = NotificationCompat.Builder(context, CHANNEL_RESULTS)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(message)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setGroup(GROUP_RESULTS)
                 .setContentIntent(pendingIntent)
@@ -139,10 +156,12 @@ class NotificationHelper(private val context: Context) {
         } else {
             val summaryText = "${results.size} new result(s) published"
             results.forEach { (title, message) ->
+                val bigText = "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
                 val notification = NotificationCompat.Builder(context, CHANNEL_RESULTS)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setContentTitle(title)
                     .setContentText(message)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setGroup(GROUP_RESULTS)
                     .setContentIntent(pendingIntent)
@@ -155,6 +174,7 @@ class NotificationHelper(private val context: Context) {
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle("New Results Available")
                 .setContentText(summaryText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText("$summaryText\n\n${results.joinToString("\\n") { it.second }}"))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setGroup(GROUP_RESULTS)
                 .setGroupSummary(true)
@@ -163,6 +183,7 @@ class NotificationHelper(private val context: Context) {
 
             notificationManager.notify(SUMMARY_ID, summary)
         }
+        results.forEach { trackNotification("RESULT", it.first, it.second) }
     }
 
     fun showDownloadNotification(success: Boolean, fileName: String) {
@@ -194,7 +215,7 @@ class NotificationHelper(private val context: Context) {
             "${newDates.size} new exam form dates updated"
         }
 
-        val bigText = newDates.joinToString("\n")
+        val bigText = "\uD83D\uDCC5 Exam Form Dates:\n" + newDates.joinToString("\n")
 
         val notification = NotificationCompat.Builder(context, CHANNEL_EXAM_DATES)
             .setSmallIcon(R.drawable.ic_notification)
@@ -206,6 +227,24 @@ class NotificationHelper(private val context: Context) {
             .setAutoCancel(true)
             .build()
         notificationManager.notify(EXAM_DATE_NOTIFICATION_ID, notification)
+        trackNotification("EXAM_DATE", "New Exam Form Dates", "${newDates.size} date(s)")
+    }
+
+    private fun trackNotification(type: String, title: String, message: String) {
+        historyDao?.let { dao ->
+            notificationScope.launch {
+                dao.insert(
+                    NotificationHistoryEntity(
+                        title = title,
+                        message = message,
+                        type = type
+                    )
+                )
+                // Cleanup old entries (keep last 7 days)
+                val weekAgo = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
+                dao.deleteOld(weekAgo)
+            }
+        }
     }
 
     companion object {
@@ -219,5 +258,6 @@ class NotificationHelper(private val context: Context) {
         const val REVAL_NOTIFICATION_ID = 100
         const val EXAM_DATE_NOTIFICATION_ID = 101
         const val NEWS_NOTIFICATION_ID = 102
+        const val RESULT_BASE_ID = 1000
     }
 }

@@ -11,6 +11,7 @@ import pinak.sppunotify.data.local.CircularDao
 import pinak.sppunotify.data.local.RevalCourseDao
 import pinak.sppunotify.data.local.ResultDatabase
 import pinak.sppunotify.data.local.DownloadedResultDao
+import pinak.sppunotify.data.local.NotificationHistoryDao
 import androidx.work.WorkManager
 import javax.inject.Singleton
 
@@ -33,7 +34,8 @@ object AppModule {
             ResultDatabase.MIGRATION_5_6,
             ResultDatabase.MIGRATION_6_7,
             ResultDatabase.MIGRATION_7_8,
-            ResultDatabase.MIGRATION_8_9
+            ResultDatabase.MIGRATION_8_9,
+            ResultDatabase.MIGRATION_9_10
         ).build()
     }
 
@@ -52,6 +54,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideExamDateDao(db: ResultDatabase): pinak.sppunotify.data.local.ExamDateDao = db.examDateDao
+
+    @Provides
+    @Singleton
+    fun provideNotificationHistoryDao(db: ResultDatabase): NotificationHistoryDao = db.notificationHistoryDao
 
     @Provides
     @Singleton

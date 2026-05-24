@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pinak.sppunotify.data.local.ResultEntity
 import pinak.sppunotify.data.repository.ResultRepository
 import javax.inject.Inject
@@ -23,4 +24,16 @@ class DetailsViewModel @Inject constructor(
     val result: StateFlow<ResultEntity?> = repository.results
         .map { results -> results.find { it.id == resultId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun markAsViewed() {
+        viewModelScope.launch {
+            repository.markAsViewed(resultId)
+        }
+    }
+
+    fun toggleBookmark() {
+        viewModelScope.launch {
+            repository.toggleBookmark(resultId)
+        }
+    }
 }

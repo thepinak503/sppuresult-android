@@ -28,9 +28,14 @@ class PreferenceManager @Inject constructor(
         val USER_PROFILES = stringSetPreferencesKey("user_profiles")
         val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val  APP_LANGUAGE = stringPreferencesKey("app_language")
         val LAST_ANNOUNCEMENT_ID = stringPreferencesKey("last_announcement_id")
         val WAS_SERVER_DOWN = booleanPreferencesKey("was_server_down")
         val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
+        val SYNC_RESULTS_ENABLED = booleanPreferencesKey("sync_results_enabled")
+        val SYNC_REVAL_ENABLED = booleanPreferencesKey("sync_reval_enabled")
+        val SYNC_EXAM_DATES_ENABLED = booleanPreferencesKey("sync_exam_dates_enabled")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
     val preferencesFlow: Flow<UserPreferences> = dataStore.data.map { preferences ->
@@ -46,10 +51,21 @@ class PreferenceManager @Inject constructor(
             profiles = profiles,
             activeProfileId = preferences[PreferencesKeys.ACTIVE_PROFILE_ID],
             themeMode = preferences[PreferencesKeys.THEME_MODE] ?: "SYSTEM",
+            appLanguage = preferences[PreferencesKeys.APP_LANGUAGE] ?: "en",
             lastAnnouncementId = preferences[PreferencesKeys.LAST_ANNOUNCEMENT_ID] ?: "",
             wasServerDown = preferences[PreferencesKeys.WAS_SERVER_DOWN] ?: false,
-            developerMode = preferences[PreferencesKeys.DEVELOPER_MODE] ?: false
+            developerMode = preferences[PreferencesKeys.DEVELOPER_MODE] ?: false,
+            syncResultsEnabled = preferences[PreferencesKeys.SYNC_RESULTS_ENABLED] ?: true,
+            syncRevalEnabled = preferences[PreferencesKeys.SYNC_REVAL_ENABLED] ?: true,
+            syncExamDatesEnabled = preferences[PreferencesKeys.SYNC_EXAM_DATES_ENABLED] ?: true,
+            onboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
         )
+    }
+
+    suspend fun updateOnboardingCompleted(completed: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.ONBOARDING_COMPLETED] = completed
+        }
     }
 
     suspend fun updateDeveloperMode(enabled: Boolean) {
@@ -158,6 +174,30 @@ class PreferenceManager @Inject constructor(
             preferences[PreferencesKeys.THEME_MODE] = themeMode
         }
     }
+
+    suspend fun updateAppLanguage(languageCode: String) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.APP_LANGUAGE] = languageCode
+        }
+    }
+
+    suspend fun updateSyncResultsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SYNC_RESULTS_ENABLED] = enabled
+        }
+    }
+
+    suspend fun updateSyncRevalEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SYNC_REVAL_ENABLED] = enabled
+        }
+    }
+
+    suspend fun updateSyncExamDatesEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SYNC_EXAM_DATES_ENABLED] = enabled
+        }
+    }
 }
 
 data class UserPreferences(
@@ -169,7 +209,12 @@ data class UserPreferences(
     val profiles: List<UserProfile>,
     val activeProfileId: String?,
     val themeMode: String = "SYSTEM",
+    val appLanguage: String = "en",
     val lastAnnouncementId: String = "",
     val wasServerDown: Boolean = false,
-    val developerMode: Boolean = false
+    val developerMode: Boolean = false,
+    val syncResultsEnabled: Boolean = true,
+    val syncRevalEnabled: Boolean = true,
+    val syncExamDatesEnabled: Boolean = true,
+    val onboardingCompleted: Boolean = false
 )

@@ -15,6 +15,7 @@ import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import pinak.sppunotify.data.local.NotificationHistoryDao
 import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.data.repository.ExamDateRepository
 import pinak.sppunotify.util.NotificationHelper
@@ -25,7 +26,8 @@ class ExamDateSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val repository: ExamDateRepository,
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -39,7 +41,7 @@ class ExamDateSyncWorker @AssistedInject constructor(
             val prefs = preferenceManager.preferencesFlow.first()
             
             if (newDates.isNotEmpty() && prefs.notificationsEnabled) {
-                val notificationHelper = NotificationHelper(applicationContext)
+                val notificationHelper = NotificationHelper(applicationContext, notificationHistoryDao)
                 notificationHelper.showExamDateNotification(newDates.map { it.courseName })
             }
             rescheduleIfNeeded()

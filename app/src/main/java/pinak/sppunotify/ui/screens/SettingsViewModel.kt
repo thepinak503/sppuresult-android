@@ -82,4 +82,10 @@ class SettingsViewModel @Inject constructor(
             preferenceManager.updateThemeMode(themeMode)
         }
     }
+
+    fun updateAppLanguage(languageCode: String) {
+        viewModelScope.launch {
+            preferenceManager.updateAppLanguage(languageCode)
+        }
+    }
 }

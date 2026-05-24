@@ -44,6 +44,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import pinak.sppunotify.ui.components.AppTopBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,7 +79,7 @@ fun AboutScreen(
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "About",
+                title = stringResource(R.string.about_title),
                 navIcon = Icons.Default.Menu,
                 onNavClick = onMenuClick
             )
@@ -94,7 +96,7 @@ fun AboutScreen(
             // Developer Photo
             AsyncImage(
                 model = "https://avatars.githubusercontent.com/u/150576156?v=4",
-                contentDescription = "Pinak Dhabu",
+                contentDescription = stringResource(R.string.dev_name),
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
@@ -105,14 +107,14 @@ fun AboutScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Pinak Dhabu",
+                text = stringResource(R.string.dev_name),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
             Text(
-                text = "Android Developer & FOSS Enthusiast",
+                text = stringResource(R.string.dev_title),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
@@ -134,7 +136,7 @@ fun AboutScreen(
                 ) {
                     Icon(Icons.Default.Code, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
-                    Text("GitHub")
+                    Text(stringResource(R.string.github))
                 }
             }
 
@@ -153,7 +155,7 @@ fun AboutScreen(
                         Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "About SPPU Result Watch",
+                            text = stringResource(R.string.about_app_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -161,20 +163,19 @@ fun AboutScreen(
                     Spacer(Modifier.height(12.dp))
                     Text(
                         text = buildAnnotatedString {
-                            append("SPPU Result Watch is a ")
+                            append(stringResource(R.string.about_app_desc_1))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("Free and Open Source (FOSS)")
+                                append(stringResource(R.string.about_app_desc_2))
                             }
-                            append(" Android application built exclusively for students of ")
+                            append(stringResource(R.string.about_app_desc_3))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("Savitribai Phule Pune University (SPPU)")
+                                append(stringResource(R.string.about_app_desc_4))
                             }
-                            append(".\n\n")
-                            append("The app scrapes the official SPPU Online Results Portal (")
+                            append(stringResource(R.string.about_app_desc_5))
                             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
                                 append("onlineresults.unipune.ac.in")
                             }
-                            append(") to provide:")
+                            append(stringResource(R.string.about_app_desc_6))
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         lineHeight = 20.sp,
@@ -184,22 +185,22 @@ fun AboutScreen(
                         Row(verticalAlignment = Alignment.Top) {
                             Icon(Icons.Default.NewReleases, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                             Spacer(Modifier.width(8.dp))
-                            Text("Browse all published exam results", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.feature_1), style = MaterialTheme.typography.bodySmall)
                         }
                         Row(verticalAlignment = Alignment.Top) {
                             Icon(Icons.Default.DataObject, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                             Spacer(Modifier.width(8.dp))
-                            Text("Filter by department (FE, SE, TE, BE, MBA, MCA, etc.)", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.feature_2), style = MaterialTheme.typography.bodySmall)
                         }
                         Row(verticalAlignment = Alignment.Top) {
                             Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                             Spacer(Modifier.width(8.dp))
-                            Text("View individual results via seat number + CAPTCHA verification", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.feature_3), style = MaterialTheme.typography.bodySmall)
                         }
                         Row(verticalAlignment = Alignment.Top) {
                             Icon(Icons.AutoMirrored.Filled.Article, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
                             Spacer(Modifier.width(8.dp))
-                            Text("Download result PDFs to your device", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.feature_4), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -220,7 +221,7 @@ fun AboutScreen(
                         Icon(Icons.Default.NotInterested, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "NOT AN OFFICIAL APP",
+                            text = stringResource(R.string.not_official_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error,
@@ -230,10 +231,9 @@ fun AboutScreen(
                     Text(
                         text = buildAnnotatedString {
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("This application is NOT affiliated, associated, authorized, endorsed by, or in any way officially connected with ")
+                                append(stringResource(R.string.not_official_desc_1))
                             }
-                            append("Savitribai Phule Pune University (SPPU), or any of its subsidiaries, departments, or affiliates.\n\n")
-                            append("This is an independent, community-developed application. The official SPPU website is: ")
+                            append(stringResource(R.string.not_official_desc_2))
                             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)) {
                                 append("www.unipune.ac.in")
                             }
@@ -259,7 +259,7 @@ fun AboutScreen(
                         Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "Data Privacy & Handling",
+                            text = stringResource(R.string.privacy_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -268,28 +268,20 @@ fun AboutScreen(
                     Text(
                         text = buildAnnotatedString {
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("What data enters this app:")
+                                append(stringResource(R.string.privacy_desc_1))
                             }
                             append("\n")
-                            append("• Result listings fetched from SPPU's portal\n")
-                            append("• Seat number and mother's name (entered by you to view results)\n")
-                            append("• CAPTCHA images from SPPU's server\n\n")
+                            append(stringResource(R.string.privacy_desc_2))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("What is stored locally on YOUR device:")
+                                append(stringResource(R.string.privacy_desc_3))
                             }
-                            append("\n")
-                            append("• Basic result metadata (title, date, URL) in local SQLite database\n")
-                            append("• Downloaded result files (in your Downloads folder)\n\n")
+                            append(stringResource(R.string.privacy_desc_4))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
-                                append("What is NEVER transmitted to third parties:")
+                                append(stringResource(R.string.privacy_desc_5))
                             }
-                            append("\n")
-                            append("• Your seat number\n")
-                            append("• Your mother's name\n")
-                            append("• Your downloaded results\n")
-                            append("• Any personal information\n\n")
+                            append(stringResource(R.string.privacy_desc_6))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
-                                append("All communication happens ONLY between your device and SPPU's official servers. No data is sent to any developer, third-party, or analytics server.")
+                                append(stringResource(R.string.privacy_desc_7))
                             }
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -300,19 +292,15 @@ fun AboutScreen(
                         Text(
                             text = buildAnnotatedString {
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("Network Communication Details:\n")
+                                    append(stringResource(R.string.tech_details_title))
+                                    append("\n")
                                 }
-                                append("• HTTPS connections only to: onlineresults.unipune.ac.in\n")
-                                append("• User-Agent mimics a desktop browser for compatibility\n")
-                                append("• Cookies and session data stored in memory only (per session)\n")
-                                append("• No tracking cookies, no analytics, no telemetry\n\n")
+                                append(stringResource(R.string.tech_details_desc))
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("Local Storage:\n")
+                                    append(stringResource(R.string.local_storage_title))
+                                    append("\n")
                                 }
-                                append("• Room SQLite database: Contains result titles, URLs, dates for caching\n")
-                                append("• MediaStore/Downloads: Result PDFs you choose to download\n")
-                                append("• No persistent credentials stored\n")
-                                append("• You can clear all app data via Android Settings → Apps")
+                                append(stringResource(R.string.local_storage_desc))
                             },
                             style = MaterialTheme.typography.bodySmall,
                             lineHeight = 17.sp,
@@ -320,7 +308,7 @@ fun AboutScreen(
                         )
                     }
                     TextButton(onClick = { showExpandedData = !showExpandedData }) {
-                        Text(if (showExpandedData) "Show less" else "Show technical details")
+                        Text(if (showExpandedData) stringResource(R.string.show_less) else stringResource(R.string.show_more))
                     }
                 }
             }
@@ -340,7 +328,7 @@ fun AboutScreen(
                         Icon(Icons.Default.Gavel, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "Legal Disclaimer",
+                            text = stringResource(R.string.legal_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error,
@@ -350,33 +338,33 @@ fun AboutScreen(
                     Text(
                         text = buildAnnotatedString {
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("1. Ownership of Content\n")
+                                append(stringResource(R.string.legal_desc_1))
                             }
-                            append("All examination results, circulars, notifications, and related content displayed through this app are the exclusive intellectual property of ")
+                            append(stringResource(R.string.legal_desc_2))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
-                                append("Savitribai Phule Pune University (SPPU)")
+                                append(stringResource(R.string.legal_desc_3))
                             }
-                            append(". The app merely acts as a browser/viewer for publicly accessible content.\n\n")
+                            append(stringResource(R.string.legal_desc_4))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("2. Fair Use Purpose\n")
+                                append(stringResource(R.string.legal_desc_5))
                             }
-                            append("This application is provided for ")
+                            append(stringResource(R.string.legal_desc_6))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Medium)) {
-                                append("educational, non-commercial purposes only")
+                                append(stringResource(R.string.legal_desc_7))
                             }
-                            append(". It is designed to assist students in conveniently accessing their exam results without having to navigate the official portal manually.\n\n")
+                            append(stringResource(R.string.legal_desc_8))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("3. Accuracy of Information\n")
+                                append(stringResource(R.string.legal_desc_9))
                             }
-                            append("While we strive to display accurate and up-to-date information, this app ")
+                            append(stringResource(R.string.legal_desc_10))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)) {
-                                append("does NOT guarantee the accuracy, completeness, or timeliness")
+                                append(stringResource(R.string.legal_desc_11))
                             }
-                            append(" of any data displayed. The official SPPU portal shall always be considered the sole authoritative source for result verification.\n\n")
+                            append(stringResource(R.string.legal_desc_12))
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("Copyright Notice\n")
+                                append(stringResource(R.string.copyright_notice_title))
                             }
-                            append("Copyright © 2026 Savitribai Phule Pune University. All rights reserved. All result content, logos, and university-related trademarks displayed through this app remain the sole property of SPPU.")
+                            append(stringResource(R.string.copyright_notice_desc))
                         },
                         style = MaterialTheme.typography.bodySmall,
                         lineHeight = 18.sp,
@@ -387,43 +375,29 @@ fun AboutScreen(
                         Text(
                             text = buildAnnotatedString {
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("4. Limitation of Liability\n")
+                                    append(stringResource(R.string.legal_4_title))
                                 }
-                                append("Under no circumstances shall the developer(s), contributor(s), or anyone associated with SPPU Result Watch be liable for:\n")
-                                append("• Any direct, indirect, incidental, or consequential damages\n")
-                                append("• Result discrepancies or errors in displayed information\n")
-                                append("• Server downtime or network connectivity issues\n")
-                                append("• Unauthorized access or data interception (while connections use HTTPS, no system is 100% secure)\n")
-                                append("• Decisions made based on information from this app\n\n")
+                                append(stringResource(R.string.legal_4_desc))
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("5. External Links\n")
+                                    append(stringResource(R.string.legal_5_title))
                                 }
-                                append("This app may display or link to external SPPU portal URLs. The developer does not control and is not responsible for:\n")
-                                append("• The content of external websites\n")
-                                append("• Changes to external websites\n")
-                                append("• Availability of external resources\n")
-                                append("• Privacy practices of external websites\n\n")
+                                append(stringResource(R.string.legal_5_desc))
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("6. No Warranty\n")
+                                    append(stringResource(R.string.legal_6_title))
                                 }
-                                append("THIS SOFTWARE IS PROVIDED \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.\n\n")
+                                append(stringResource(R.string.legal_6_desc))
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("7. User Responsibilities\n")
+                                    append(stringResource(R.string.legal_7_title))
                                 }
-                                append("By using this app, you acknowledge and agree that:\n")
-                                append("• You will use this app only for legitimate academic purposes\n")
-                                append("• You will not use this app for any illegal or unauthorized purpose\n")
-                                append("• You understand that result viewing requires entering your seat number and mother's name — this data is transmitted ONLY to SPPU's servers\n")
-                                append("• You will verify critical information (results, dates, deadlines) through official SPPU channels\n")
-                                append("• You will not misuse, redistribute, or sell any data obtained through this app\n\n")
+                                append(stringResource(R.string.legal_7_desc))
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("8. Modifications to Disclaimer\n")
+                                    append(stringResource(R.string.legal_8_title))
                                 }
-                                append("This legal disclaimer may be updated without prior notice. Continued use of the app constitutes acceptance of the current disclaimer.\n\n")
+                                append(stringResource(R.string.legal_8_desc))
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append("9. Governing Law\n")
+                                    append(stringResource(R.string.legal_9_title))
                                 }
-                                append("This disclaimer and any disputes arising shall be governed by the laws of India. Any legal proceedings shall be subject to the exclusive jurisdiction of courts in Pune, Maharashtra.")
+                                append(stringResource(R.string.legal_9_desc))
                             },
                             style = MaterialTheme.typography.bodySmall,
                             lineHeight = 17.sp,
@@ -432,7 +406,7 @@ fun AboutScreen(
                     }
 
                     TextButton(onClick = { showExpandedLegal = !showExpandedLegal }) {
-                        Text(if (showExpandedLegal) "Show less" else "Show full legal disclaimer")
+                        Text(if (showExpandedLegal) stringResource(R.string.show_less) else stringResource(R.string.legal_full_title))
                     }
                 }
             }
@@ -452,14 +426,14 @@ fun AboutScreen(
                         Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "Open Source",
+                            text = stringResource(R.string.open_source_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "SPPU Result Watch is Free and Open Source Software. You are free to view, modify, and distribute the source code under applicable open source license terms.",
+                        text = stringResource(R.string.open_source_desc),
                         style = MaterialTheme.typography.bodySmall,
                         lineHeight = 18.sp,
                     )
@@ -469,7 +443,7 @@ fun AboutScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Version 1.0.0",
+                text = stringResource(R.string.version_text, "1.0.0"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -486,7 +460,7 @@ fun AboutScreen(
                 )
                 Spacer(Modifier.width(4.dp))
                 Text(
-                    text = "2026 Savitribai Phule Pune University",
+                    text = stringResource(R.string.copyright_sppu),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
@@ -494,3 +468,4 @@ fun AboutScreen(
         }
     }
 }
+

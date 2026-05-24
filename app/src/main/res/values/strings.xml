@@ -10,4 +10,132 @@
     <string name="sync_service_channel_desc">Background result sync service</string>
     <string name="sync_service_notification_title">Syncing Results</string>
     <string name="sync_service_notification_text">Checking for new SPPU results</string>
+
+    <string name="widget_loading">Loading latest results…</string>
+    <string name="widget_just_now">Just now</string>
+    <string name="widget_status_indicator">Server status indicator</string>
+
+    <!-- Navigation -->
+    <string name="nav_results">Results</string>
+    <string name="nav_reval">Revaluation</string>
+    <string name="nav_circulars">Circulars</string>
+    <string name="nav_exam_dates">Exam Dates</string>
+    <string name="nav_calculator">Calculator</string>
+    <string name="nav_vault">Vault</string>
+    <string name="nav_links">Links</string>
+    <string name="nav_about">About</string>
+
+    <!-- Common UI -->
+    <string name="search_placeholder">Search here...</string>
+    <string name="pull_to_refresh">Pull down to refresh</string>
+    <string name="retry">Retry</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="refresh">Refresh</string>
+    <string name="updated_at">Updated %1$s</string>
+    <string name="results_count">%1$d results</string>
+    <string name="courses_count">%1$d courses</string>
+
+    <!-- HomeScreen -->
+    <string name="sort_by">Sort Results By</string>
+    <string name="rec_depts">Recommended Departments</string>
+    <string name="instant_results">Instant Results</string>
+    <string name="no_matches">No results matching \"%1$s\"</string>
+    <string name="no_dept_results">No results for %1$s department</string>
+    <string name="no_results_found">No results found.</string>
+    <string name="check_status">Check Status</string>
+    <string name="copy_title">Copy Title</string>
+    <string name="share">Share</string>
+    <string name="bookmark">Bookmark</string>
+    <string name="remove_bookmark">Remove Bookmark</string>
+    <string name="mark_as_read">Mark as Read</string>
+
+    <!-- ExamDates -->
+    <string name="exam_dates_title">Exam Dates</string>
+    <string name="starts">Starts: %1$s</string>
+    <string name="end_date">End Date</string>
+    <string name="with_late_fee">With Late Fee</string>
+
+    <!-- Settings -->
+    <string name="saved_profiles">Saved Profiles</string>
+    <string name="smart_watchlist">Smart Watchlist</string>
+    <string name="app_theme">App Theme</string>
+    <string name="battery_opt">Battery Optimization</string>
+    <string name="app_language">App Language</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_black">Pitch Black (OLED)</string>
+
+    <!-- About Screen -->
+    <string name="about_title">About</string>
+    <string name="dev_name">Pinak Dhabu</string>
+    <string name="dev_title">Android Developer &amp; FOSS Enthusiast</string>
+    <string name="github">GitHub</string>
+    <string name="about_app_title">About SPPU Result Notify</string>
+    <string name="about_app_desc_1">SPPU Result Notify is a </string>
+    <string name="about_app_desc_2">Free and Open Source (FOSS)</string>
+    <string name="about_app_desc_3"> Android application built exclusively for students of </string>
+    <string name="about_app_desc_4">Savitribai Phule Pune University (SPPU)</string>
+    <string name="about_app_desc_5">.\n\nThe app scrapes the official SPPU Online Results Portal (</string>
+    <string name="about_app_desc_6">) to provide:</string>
+    <string name="feature_1">Browse all published exam results</string>
+    <string name="feature_2">Filter by department (FE, SE, TE, BE, MBA, MCA, etc.)</string>
+    <string name="feature_3">View individual results via seat number + CAPTCHA verification</string>
+    <string name="feature_4">Download result PDFs to your device</string>
+
+    <string name="not_official_title">NOT AN OFFICIAL APP</string>
+    <string name="not_official_desc_1">This application is NOT affiliated, associated, authorized, endorsed by, or in any way officially connected with </string>
+    <string name="not_official_desc_2">Savitribai Phule Pune University (SPPU), or any of its subsidiaries, departments, or affiliates.\n\nThis is an independent, community-developed application. The official SPPU website is: </string>
+
+    <string name="privacy_title">Data Privacy &amp; Handling</string>
+    <string name="privacy_desc_1">What data enters this app:</string>
+    <string name="privacy_desc_2">• Result listings fetched from SPPU\'s portal\n• Seat number and mother\'s name (entered by you to view results)\n• CAPTCHA images from SPPU\'s server\n\n</string>
+    <string name="privacy_desc_3">What is stored locally on YOUR device:</string>
+    <string name="privacy_desc_4">\n• Basic result metadata (title, date, URL) in local SQLite database\n• Downloaded result files (in your Downloads folder)\n\n</string>
+    <string name="privacy_desc_5">What is NEVER transmitted to third parties:</string>
+    <string name="privacy_desc_6">\n• Your seat number\n• Your mother\'s name\n• Your downloaded results\n• Any personal information\n\n</string>
+    <string name="privacy_desc_7">All communication happens ONLY between your device and SPPU\'s official servers. No data is sent to any developer, third-party, or analytics server.</string>
+
+    <string name="tech_details_title">Network Communication Details:</string>
+    <string name="tech_details_desc">• HTTPS connections only to: onlineresults.unipune.ac.in\n• User-Agent mimics a desktop browser for compatibility\n• Cookies and session data stored in memory only (per session)\n• No tracking cookies, no analytics, no telemetry\n\n</string>
+    <string name="local_storage_title">Local Storage:</string>
+    <string name="local_storage_desc">• Room SQLite database: Contains result titles, URLs, dates for caching\n• MediaStore/Downloads: Result PDFs you choose to download\n• No persistent credentials stored\n• You can clear all app data via Android Settings → Apps</string>
+    <string name="show_more">Show technical details</string>
+    <string name="show_less">Show less</string>
+
+    <string name="legal_title">Legal Disclaimer</string>
+    <string name="legal_desc_1">1. Ownership of Content\n</string>
+    <string name="legal_desc_2">All examination results, circulars, notifications, and related content displayed through this app are the exclusive intellectual property of </string>
+    <string name="legal_desc_3">Savitribai Phule Pune University (SPPU)</string>
+    <string name="legal_desc_4">. The app merely acts as a browser/viewer for publicly accessible content.\n\n</string>
+    <string name="legal_desc_5">2. Fair Use Purpose\n</string>
+    <string name="legal_desc_6">This application is provided for </string>
+    <string name="legal_desc_7">educational, non-commercial purposes only</string>
+    <string name="legal_desc_8">. It is designed to assist students in conveniently accessing their exam results without having to navigate the official portal manually.\n\n</string>
+    <string name="legal_desc_9">3. Accuracy of Information\n</string>
+    <string name="legal_desc_10">While we strive to display accurate and up-to-date information, this app </string>
+    <string name="legal_desc_11">does NOT guarantee the accuracy, completeness, or timeliness</string>
+    <string name="legal_desc_12"> of any data displayed. The official SPPU portal shall always be considered the sole authoritative source for result verification.\n\n</string>
+    <string name="copyright_notice_title">Copyright Notice\n</string>
+    <string name="copyright_notice_desc">Copyright © 2026 Savitribai Phule Pune University. All rights reserved. All result content, logos, and university-related trademarks displayed through this app remain the sole property of SPPU.</string>
+
+    <string name="legal_full_title">Show full legal disclaimer</string>
+    <string name="legal_4_title">4. Limitation of Liability\n</string>
+    <string name="legal_4_desc">• Any direct, indirect, incidental, or consequential damages\n• Result discrepancies or errors in displayed information\n• Server downtime or network connectivity issues\n• Unauthorized access or data interception (while connections use HTTPS, no system is 100% secure)\n• Decisions made based on information from this app\n\n</string>
+    <string name="legal_5_title">5. External Links\n</string>
+    <string name="legal_5_desc">This app may display or link to external SPPU portal URLs. The developer does not control and is not responsible for:\n• The content of external websites\n• Changes to external websites\n• Availability of external resources\n• Privacy practices of external websites\n\n</string>
+    <string name="legal_6_title">6. No Warranty\n</string>
+    <string name="legal_6_desc">THIS SOFTWARE IS PROVIDED \"AS IS\" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.\n\n</string>
+    <string name="legal_7_title">7. User Responsibilities\n</string>
+    <string name="legal_7_desc">By using this app, you acknowledge and agree that:\n• You will use this app only for legitimate academic purposes\n• You will not use this app for any illegal or unauthorized purpose\n• You understand that result viewing requires entering your seat number and mother\'s name — this data is transmitted ONLY to SPPU\'s servers\n• You will verify critical information (results, dates, deadlines) through official SPPU channels\n• You will not misuse, redistribute, or sell any data obtained through this app\n\n</string>
+    <string name="legal_8_title">8. Modifications to Disclaimer\n</string>
+    <string name="legal_8_desc">This legal disclaimer may be updated without prior notice. Continued use of the app constitutes acceptance of the current disclaimer.\n\n</string>
+    <string name="legal_9_title">9. Governing Law\n</string>
+    <string name="legal_9_desc">This disclaimer and any disputes arising shall be governed by the laws of India. Any legal proceedings shall be subject to the exclusive jurisdiction of courts in Pune, Maharashtra.</string>
+
+    <string name="open_source_title">Open Source</string>
+    <string name="open_source_desc">SPPU Result Notify is Free and Open Source Software. You are free to view, modify, and distribute the source code under applicable open source license terms.</string>
+    <string name="version_text">Version %1$s</string>
+    <string name="copyright_sppu">2026 Savitribai Phule Pune University</string>
 </resources>

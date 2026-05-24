@@ -3,9 +3,10 @@ package pinak.sppunotify.data.local
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import java.security.KeyStore
-import java.util.Base64
+
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
+import android.util.Base64
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
@@ -39,11 +40,11 @@ object CryptoManager {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
         val combined = cipher.iv + cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
-        return Base64.getEncoder().encodeToString(combined)
+        return Base64.encodeToString(combined, Base64.NO_WRAP)
     }
 
     fun decrypt(ciphertext: String): String {
-        val combined = Base64.getDecoder().decode(ciphertext)
+        val combined = Base64.decode(ciphertext, Base64.NO_WRAP)
         val cipher = Cipher.getInstance(TRANSFORMATION)
         val iv = combined.copyOfRange(0, 12)
         val encrypted = combined.copyOfRange(12, combined.size)

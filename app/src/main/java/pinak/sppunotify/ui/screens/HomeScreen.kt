@@ -1,10 +1,14 @@
 package pinak.sppunotify.ui.screens
 
+import android.content.ClipData
+import android.content.Context
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -17,13 +21,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -34,21 +44,31 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.R
 import pinak.sppunotify.data.local.ResultEntity
+import pinak.sppunotify.data.remote.ServerStatus
 import pinak.sppunotify.ui.theme.DeptColors
-
-import androidx.compose.material.icons.filled.Circle
-import pinak.sppunotify.data.remote.StatusLevel
 import pinak.sppunotify.ui.components.AppSearchBar
+import pinak.sppunotify.ui.components.ServerStatusBar
 import pinak.sppunotify.ui.components.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalLayoutApi::class)
@@ -61,6 +81,7 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
+    val context = LocalContext.current
     val results by viewModel.results.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val serverStatus by viewModel.serverStatus.collectAsState()
@@ -72,12 +93,14 @@ fun HomeScreen(
     val departments = viewModel.departments
 
     val snackbarHostState = remember { SnackbarHostState() }
+    var fabExpanded by remember { mutableStateOf(false) }
 
     var dialogTitle by remember { mutableStateOf("") }
     var dialogMessage by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(value = false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var searchActive by remember { mutableStateOf(false) }
+    val recentSearches = remember { mutableStateListOf<String>() }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
@@ -94,6 +117,12 @@ fun HomeScreen(
         }
     }
 
+    val fabRotation by animateFloatAsState(
+        targetValue = if (fabExpanded) 45f else 0f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
+        label = "fabRotation"
+    )
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
@@ -101,36 +130,11 @@ fun HomeScreen(
                 titleContent = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Results",
+                            text = stringResource(R.string.nav_results),
                             fontWeight = FontWeight.ExtraBold,
                             style = MaterialTheme.typography.titleLarge,
                         )
-                        serverStatus?.let { status ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Circle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(8.dp),
-                                    tint = when (status.statusLevel) {
-                                        StatusLevel.HEALTHY -> Color(0xFF4CAF50)
-                                        StatusLevel.SLOW -> Color(0xFFFFC107)
-                                        StatusLevel.BUSY -> Color(0xFFFF9800)
-                                        StatusLevel.DOWN -> Color(0xFFF44336)
-                                    }
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = when (status.statusLevel) {
-                                        StatusLevel.HEALTHY -> "Online (${status.responseTimeMs}ms)"
-                                        StatusLevel.SLOW -> "Slow (${status.responseTimeMs}ms)"
-                                        StatusLevel.BUSY -> "Busy (Server Overloaded)"
-                                        StatusLevel.DOWN -> "Down"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                        ServerStatusBar(serverStatus = serverStatus)
                     }
                 },
                 navIcon = Icons.Default.Menu,
@@ -153,14 +157,12 @@ fun HomeScreen(
                         targetValue = if (isRefreshing) 360f else 0f,
                         animationSpec = if (isRefreshing) {
                             infiniteRepeatable(tween(1000, easing = LinearEasing))
-                        } else {
-                            tween(0)
-                        },
+                        } else { tween(0) },
                         label = "refresh_rotation"
                     )
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         viewModel.refresh()
-                        viewModel.checkServerStatus() // Manually trigger status check on refresh
+                        viewModel.checkServerStatus()
                     }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -170,6 +172,67 @@ fun HomeScreen(
                     }
                 },
             )
+        },
+        floatingActionButton = {
+            if (!searchActive) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    AnimatedVisibility(
+                        visible = fabExpanded,
+                        enter = fadeIn(spring()) + slideInVertically { it / 2 },
+                        exit = fadeOut(spring()) + slideOutVertically { it / 2 }
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            MiniFabItem(
+                                icon = Icons.Default.CloudSync,
+                                label = stringResource(R.string.check_status),
+                                onClick = {
+                                    viewModel.checkServerStatus()
+                                    fabExpanded = false
+                                }
+                            )
+                            MiniFabItem(
+                                icon = Icons.Default.Refresh,
+                                label = stringResource(R.string.refresh),
+                                onClick = {
+                                    viewModel.refresh()
+                                    fabExpanded = false
+                                }
+                            )
+                            MiniFabItem(
+                                icon = Icons.AutoMirrored.Filled.Sort,
+                                label = "Sort",
+                                onClick = {
+                                    fabExpanded = false
+                                    showSortMenu = true
+                                }
+                            )
+                        }
+                    }
+
+                    FloatingActionButton(
+                        onClick = { fabExpanded = !fabExpanded },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        shape = CircleShape,
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 6.dp,
+                            pressedElevation = 12.dp
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = if (fabExpanded) "Close quick actions" else "More actions",
+                            modifier = Modifier.graphicsLayer { rotationZ = fabRotation }
+                        )
+                    }
+                }
+            }
         }
     ) { padding ->
         if (showSortMenu) {
@@ -186,7 +249,7 @@ fun HomeScreen(
                         .padding(bottom = 40.dp)
                 ) {
                     Text(
-                        text = "Sort Results By",
+                        text = stringResource(R.string.sort_by),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
@@ -247,10 +310,21 @@ fun HomeScreen(
                 query = searchQuery,
                 onQueryChange = { viewModel.onSearchQueryChange(it) },
                 expanded = searchActive,
-                onExpandedChange = { searchActive = it },
-                placeholder = "Search results...",
+                onExpandedChange = {
+                    searchActive = it
+                    if (!it && searchQuery.isNotBlank() && !recentSearches.contains(searchQuery)) {
+                        recentSearches.add(0, searchQuery)
+                    }
+                },
+                placeholder = stringResource(R.string.search_placeholder),
+                recentSearches = recentSearches,
+                onDismissRecentSearch = { recentSearches.remove(it) },
+                onSearch = { query ->
+                    if (query.isNotBlank() && !recentSearches.contains(query)) {
+                        recentSearches.add(0, query)
+                    }
+                },
             ) {
-                // --- RECOMMENDATIONS / RECENT SEARCHES ---
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -263,7 +337,7 @@ fun HomeScreen(
                     ) {
                         Column {
                             Text(
-                                "Recommended Departments",
+                                stringResource(R.string.rec_depts),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 12.dp)
@@ -289,7 +363,7 @@ fun HomeScreen(
                     if (results.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            "Instant Results",
+                            stringResource(R.string.instant_results),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -368,64 +442,14 @@ fun HomeScreen(
                 if (results.isNotEmpty()) {
                     AnimatedVisibility(
                         visible = true,
-                        enter = expandVertically() + fadeIn()
+                        enter = expandVertically(animationSpec = tween(400)) + fadeIn(tween(300))
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // Count pill
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                                tonalElevation = 0.dp
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.School,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(13.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = "$totalCount results",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-                            // Right side: last updated + sort order
-                            Column(horizontalAlignment = Alignment.End) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                ) {
-                                    Text(
-                                        text = sortOrder.label,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (lastUpdated.isNotEmpty()) {
-                                    Text(
-                                        text = "Updated $lastUpdated",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.padding(top = 2.dp)
-                                    )
-                                }
-                            }
-                        }
+                        QuickStatsRow(
+                            totalCount = totalCount,
+                            serverStatus = serverStatus,
+                            sortOrder = sortOrder,
+                            lastUpdated = lastUpdated
+                        )
                     }
                 }
 
@@ -455,9 +479,9 @@ fun HomeScreen(
                                 ) {
                                     EmptyState(
                                         message = when {
-                                            searchQuery.isNotEmpty() -> "No results matching \"$searchQuery\""
-                                            selectedDept != "All" -> "No results for $selectedDept department"
-                                            else -> "No results found."
+                                            searchQuery.isNotEmpty() -> stringResource(R.string.no_matches, searchQuery)
+                                            selectedDept != "All" -> stringResource(R.string.no_dept_results, selectedDept)
+                                            else -> stringResource(R.string.no_results_found)
                                         }
                                     )
                                 }
@@ -470,20 +494,39 @@ fun HomeScreen(
                                     start = 16.dp,
                                     end = 16.dp,
                                     top = 16.dp,
-                                    bottom = 120.dp // Space for floating nav bar
+                                    bottom = 160.dp
                                 ),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                items(results, key = { it.id }) { result ->
+                                itemsIndexed(
+                                    items = results,
+                                    key = { _, result -> result.id }
+                                ) { _, result ->
                                     ResultCard(
                                         result = result,
                                         searchQuery = searchQuery,
                                         modifier = Modifier.animateItem(),
                                         sharedTransitionScope = sharedTransitionScope,
-                                        animatedVisibilityScope = animatedVisibilityScope
-                                    ) {
-                                        onResultClick(result)
-                                    }
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                        onToggleBookmark = { viewModel.toggleBookmark(result.id) },
+                                        onShareResult = {
+                                            val sendIntent = Intent().apply {
+                                                action = Intent.ACTION_SEND
+                                                putExtra(Intent.EXTRA_TEXT, "Check out this SPPU Result: ${result.title}\nLink: ${result.url}")
+                                                type = "text/plain"
+                                            }
+                                            context.startActivity(Intent.createChooser(sendIntent, null))
+                                        },
+                                        onCopyTitle = {
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                            clipboard.setPrimaryClip(ClipData.newPlainText("Result Title", result.title))
+                                        },
+                                        onMarkAsViewed = { viewModel.markAsViewed(result.id) },
+                                        onClick = {
+                                            viewModel.markAsViewed(result.id)
+                                            onResultClick(result)
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -515,6 +558,102 @@ fun HomeScreen(
     }
 }
 
+@Composable
+private fun MiniFabItem(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f))
+            .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 6.dp)
+        )
+        FloatingActionButton(
+            onClick = onClick,
+            modifier = Modifier.size(36.dp),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            elevation = FloatingActionButtonDefaults.elevation(0.dp)
+        ) {
+            Icon(icon, contentDescription = label, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun QuickStatsRow(
+    totalCount: Int,
+    serverStatus: ServerStatus?,
+    sortOrder: SortOrder,
+    lastUpdated: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+            tonalElevation = 0.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.School,
+                    contentDescription = "Results count",
+                    modifier = Modifier.size(13.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(R.string.results_count, totalCount),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ) {
+                Text(
+                    text = sortOrder.label,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (lastUpdated.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.updated_at, lastUpdated),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ResultCard(
@@ -523,15 +662,20 @@ fun ResultCard(
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    onToggleBookmark: () -> Unit = {},
+    onShareResult: () -> Unit = {},
+    onCopyTitle: () -> Unit = {},
+    onMarkAsViewed: () -> Unit = {},
     onClick: () -> Unit,
 ) {
     val highlightedTitle = remember(result.title, searchQuery) {
         highlightText(result.title, searchQuery)
     }
-
     val deptColor = remember(result.department) { DeptColors.accentFor(result.department) }
 
     var isPressed by remember { mutableStateOf(value = false) }
+    var showContextMenu by remember { mutableStateOf(false) }
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(
@@ -542,128 +686,201 @@ fun ResultCard(
     )
 
     with(sharedTransitionScope) {
-        Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .scale(scale)
-                .sharedBounds(
-                    rememberSharedContentState(key = "card-${result.id}"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                )
-                .clickable {
-                    isPressed = true
-                    onClick()
-                    isPressed = false
-                },
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
-            ),
-        ) {
-            // Left-accent border strip
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    deptColor,
-                                    deptColor.copy(alpha = 0.3f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)
-                        )
-                        .align(Alignment.CenterVertically)
-                )
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 12.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)
-                ) {
-                    // Department badge + date row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+        Box {
+            Card(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .scale(scale)
+                    .sharedBounds(
+                        rememberSharedContentState(key = "card-${result.id}"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                    )
+                    .combinedClickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {
+                            isPressed = true
+                            onClick()
+                            isPressed = false
+                        },
+                        onLongClick = { showContextMenu = true }
+                    )
+                    .semantics {
+                        contentDescription = "Result: ${result.title}, ${result.department}, ${result.publishedDate}"
+                        role = Role.Button
+                    },
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
+                ),
+            ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .fillMaxHeight()
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        deptColor,
+                                        deptColor.copy(alpha = 0.3f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)
+                            )
+                            .align(Alignment.CenterVertically)
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)
                     ) {
-                        if (result.department.isNotEmpty() && result.department != "Other UG") {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = deptColor.copy(alpha = 0.15f),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
+                                // isViewed blue dot
+                                if (!result.isViewed) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = CircleShape
+                                            )
+                                            .semantics { contentDescription = "Unread" }
+                                    )
+                                }
+                                if (result.department.isNotEmpty() && result.department != "Other UG") {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = deptColor.copy(alpha = 0.15f),
+                                    ) {
+                                        Text(
+                                            text = result.department,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = deptColor,
+                                            maxLines = 1
+                                        )
+                                    }
+                                } else {
+                                    Spacer(Modifier.size(1.dp))
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Bookmark star toggle
+                                IconButton(
+                                    onClick = onToggleBookmark,
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (result.isBookmarked) Icons.Filled.Star else Icons.Filled.StarBorder,
+                                        contentDescription = if (result.isBookmarked) "Remove bookmark" else "Bookmark",
+                                        modifier = Modifier.size(18.dp),
+                                        tint = if (result.isBookmarked) Color(0xFFFFB300) else MaterialTheme.colorScheme.outline
+                                    )
+                                }
                                 Text(
-                                    text = result.department,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    text = result.publishedDate,
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = deptColor,
-                                    maxLines = 1
+                                    color = MaterialTheme.colorScheme.outline,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.sharedElement(
+                                        rememberSharedContentState(key = "date-${result.id}"),
+                                        animatedVisibilityScope = animatedVisibilityScope
+                                    )
                                 )
                             }
-                        } else {
-                            Spacer(Modifier.size(1.dp))
                         }
+                        Spacer(Modifier.height(8.dp))
                         Text(
-                            text = result.publishedDate,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
-                            fontWeight = FontWeight.Medium,
+                            text = highlightedTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 22.sp,
                             modifier = Modifier.sharedElement(
-                                rememberSharedContentState(key = "date-${result.id}"),
+                                rememberSharedContentState(key = "title-${result.id}"),
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
                         )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    // Title
-                    Text(
-                        text = highlightedTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 22.sp,
-                        modifier = Modifier.sharedElement(
-                            rememberSharedContentState(key = "title-${result.id}"),
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                    )
-                    // Pattern name sub-label — only if it's a human-readable name, not an encoded key
-                    if (result.patternName.isNotBlank() && result.patternName.length <= 50 && result.patternName.contains(' ')) {
-                        Spacer(Modifier.height(6.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.BookmarkBorder,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                            )
-                            Text(
-                                text = result.patternName,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        if (result.patternName.isNotBlank() && result.patternName.length <= 50 && result.patternName.contains(' ')) {
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Bookmark,
+                                    contentDescription = "Pattern: ${result.patternName}",
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                )
+                                Text(
+                                    text = result.patternName,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
             }
+
+            // Long-press context menu overlay
+            DropdownMenu(
+                expanded = showContextMenu,
+                onDismissRequest = { showContextMenu = false },
+                offset = DpOffset(x = 48.dp, y = 0.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.copy_title), fontWeight = FontWeight.Medium) },
+                    onClick = { showContextMenu = false; onCopyTitle() },
+                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = "Copy Title", modifier = Modifier.size(20.dp)) }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.share), fontWeight = FontWeight.Medium) },
+                    onClick = { showContextMenu = false; onShareResult() },
+                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(20.dp)) }
+                )
+                DropdownMenuItem(
+                    text = { Text(if (result.isBookmarked) stringResource(R.string.remove_bookmark) else stringResource(R.string.bookmark), fontWeight = FontWeight.Medium) },
+                    onClick = { showContextMenu = false; onToggleBookmark() },
+                    leadingIcon = {
+                        Icon(
+                            if (result.isBookmarked) Icons.Filled.Star else Icons.Filled.StarBorder,
+                            contentDescription = if (result.isBookmarked) "Remove Bookmark" else "Bookmark",
+                            modifier = Modifier.size(20.dp),
+                            tint = if (result.isBookmarked) Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.mark_as_read), fontWeight = FontWeight.Medium) },
+                    onClick = { showContextMenu = false; onMarkAsViewed() },
+                    leadingIcon = { Icon(Icons.Default.Visibility, contentDescription = "Mark as Read", modifier = Modifier.size(20.dp)) }
+                )
+            }
         }
     }
 }
-
 
 private fun highlightText(text: String, query: String): androidx.compose.ui.text.AnnotatedString {
     if (query.isBlank()) return buildAnnotatedString { append(text) }
@@ -721,14 +938,13 @@ fun EmptyState(message: String) {
         modifier = Modifier.padding(48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Layered decorative icon cluster
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(96.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.School,
-                contentDescription = null,
+                contentDescription = "No results",
                 modifier = Modifier
                     .size(96.dp)
                     .graphicsLayer {

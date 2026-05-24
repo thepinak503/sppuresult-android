@@ -19,6 +19,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +38,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import pinak.sppunotify.data.local.PreferenceManager
+import pinak.sppunotify.util.ResultImageGenerator
+import pinak.sppunotify.util.ResultPdfExport
+import pinak.sppunotify.util.ResultImageShare
 import pinak.sppunotify.util.FileSaver
 import pinak.sppunotify.util.NotificationHelper
 import kotlinx.coroutines.flow.first
@@ -299,6 +305,53 @@ fun ResultViewScreen(
                         )
                     } else {
                         Text("Check Result", style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+
+                if (state.resultBytes != null) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Result Fetched!", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val uri = ResultPdfExport.exportToPdf(context, result)
+                                if (uri != null) {
+                                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                                        setDataAndType(uri, "application/pdf")
+                                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "View Result PDF"))
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("PDF")
+                        }
+                        
+                        OutlinedButton(
+                            onClick = {
+                                ResultImageShare.shareAsImage(
+                                    context = context,
+                                    title = result.title,
+                                    department = result.department,
+                                    publishedDate = result.publishedDate,
+                                    patternName = result.patternName
+                                )
+                            },
+                            modifier = Modifier.weight(1f).height(50.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Image")
+                        }
                     }
                 }
             }
