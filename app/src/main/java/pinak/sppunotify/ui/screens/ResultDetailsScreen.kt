@@ -102,7 +102,7 @@ fun ResultDetailsScreen(
                         modifier = Modifier.clickable {
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "Check out this SPPU Result: ${result.title}\nLink: ${result.url}")
+                                putExtra(Intent.EXTRA_TEXT, "Check out this SPPU Result: ${result.title}\nLink: ${result.url}\n\nGet the app: https://github.com/thepinak503/sppuresult-android")
                                 type = "text/plain"
                             }
                             context.safeStartActivity(Intent.createChooser(sendIntent, null))

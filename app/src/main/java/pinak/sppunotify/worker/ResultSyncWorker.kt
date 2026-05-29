@@ -35,6 +35,7 @@ class ResultSyncWorker @AssistedInject constructor(
     private val repository: ResultRepository,
     private val remoteConfigRepository: RemoteConfigRepository,
     private val preferenceManager: PreferenceManager,
+    private val updateManager: pinak.sppunotify.util.UpdateManager,
     private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
@@ -69,32 +70,12 @@ class ResultSyncWorker @AssistedInject constructor(
                 }
             }
 
-            // 2. Remote Config: Announcements & Updates
+            // 2. Remote Config & App Updates
             try {
+                updateManager.checkAndNotifyUpdate(notificationHelper)
+                
                 val config = remoteConfigRepository.fetchAppConfig()
                 if (config != null) {
-                    // Check for App Updates
-                    val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        applicationContext.packageManager.getPackageInfo(applicationContext.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        applicationContext.packageManager.getPackageInfo(applicationContext.packageName, 0)
-                    }
-                    val currentVersion = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        pInfo.longVersionCode
-                    } else {
-                        @Suppress("DEPRECATION")
-                        pInfo.versionCode.toLong()
-                    }
-
-                    if (config.latestVersionCode > currentVersion) {
-                        notificationHelper.showNewsNotification(
-                            title = "Update Available: v${config.latestVersionName}",
-                            message = "A new version of SPPU Result Watch is available. Tap to download.",
-                            type = "FEATURE"
-                        )
-                    }
-
                     // Check for Announcements
                     config.announcement?.let { announcement ->
                         if (announcement.id != prefs.lastAnnouncementId) {

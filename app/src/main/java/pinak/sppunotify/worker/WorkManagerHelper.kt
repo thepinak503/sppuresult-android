@@ -20,6 +20,7 @@ class WorkManagerHelper @Inject constructor(
         const val RESULT_SYNC_WORK_NAME = "ResultSyncWork"
         const val REVAL_SYNC_WORK_NAME = "RevalSyncWork"
         const val EXAM_DATE_SYNC_WORK_NAME = "ExamDateSyncWork"
+        const val CIRCULAR_SYNC_WORK_NAME = "CircularSyncWork"
     }
 
     fun updateSyncWork(preferences: UserPreferences) {
@@ -41,6 +42,12 @@ class WorkManagerHelper @Inject constructor(
                 scheduleExamDateSync(preferences.examDateSyncInterval)
             } else {
                 workManager.cancelUniqueWork(EXAM_DATE_SYNC_WORK_NAME)
+            }
+
+            if (preferences.syncCircularsEnabled) {
+                scheduleCircularSync(preferences.circularSyncInterval)
+            } else {
+                workManager.cancelUniqueWork(CIRCULAR_SYNC_WORK_NAME)
             }
         } else {
             cancelAllSync()
@@ -134,10 +141,40 @@ class WorkManagerHelper @Inject constructor(
         }
     }
 
+    private fun scheduleCircularSync(intervalMinutes: Int) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        workManager.cancelUniqueWork(CIRCULAR_SYNC_WORK_NAME)
+
+        if (intervalMinutes < 15) {
+            val request = OneTimeWorkRequestBuilder<CircularSyncWorker>()
+                .setInitialDelay(intervalMinutes.toLong(), TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .build()
+            workManager.enqueueUniqueWork(
+                CIRCULAR_SYNC_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        } else {
+            val request = PeriodicWorkRequestBuilder<CircularSyncWorker>(
+                intervalMinutes.toLong(), TimeUnit.MINUTES
+            ).setConstraints(constraints).build()
+            workManager.enqueueUniquePeriodicWork(
+                CIRCULAR_SYNC_WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+        }
+    }
+
     fun cancelAllSync() {
         workManager.cancelUniqueWork(RESULT_SYNC_WORK_NAME)
         workManager.cancelUniqueWork(REVAL_SYNC_WORK_NAME)
         workManager.cancelUniqueWork(EXAM_DATE_SYNC_WORK_NAME)
+        workManager.cancelUniqueWork(CIRCULAR_SYNC_WORK_NAME)
     }
 
     /** Get sync status info for dashboard */
@@ -145,13 +182,15 @@ class WorkManagerHelper @Inject constructor(
         return SyncStatus(
             isResultSyncScheduled = workManager.getWorkInfosForUniqueWork(RESULT_SYNC_WORK_NAME).get().isNotEmpty(),
             isRevalSyncScheduled = workManager.getWorkInfosForUniqueWork(REVAL_SYNC_WORK_NAME).get().isNotEmpty(),
-            isExamDateSyncScheduled = workManager.getWorkInfosForUniqueWork(EXAM_DATE_SYNC_WORK_NAME).get().isNotEmpty()
+            isExamDateSyncScheduled = workManager.getWorkInfosForUniqueWork(EXAM_DATE_SYNC_WORK_NAME).get().isNotEmpty(),
+            isCircularSyncScheduled = workManager.getWorkInfosForUniqueWork(CIRCULAR_SYNC_WORK_NAME).get().isNotEmpty()
         )
     }
 
     data class SyncStatus(
         val isResultSyncScheduled: Boolean,
         val isRevalSyncScheduled: Boolean,
-        val isExamDateSyncScheduled: Boolean
+        val isExamDateSyncScheduled: Boolean,
+        val isCircularSyncScheduled: Boolean
     )
 }

@@ -512,7 +512,7 @@ fun HomeScreen(
                                         onShareResult = {
                                             val sendIntent = Intent().apply {
                                                 action = Intent.ACTION_SEND
-                                                putExtra(Intent.EXTRA_TEXT, "Check out this SPPU Result: ${result.title}\nLink: ${result.url}")
+                                                putExtra(Intent.EXTRA_TEXT, "Check out this SPPU Result: ${result.title}\nLink: ${result.url}\n\nGet the app: https://github.com/thepinak503/sppuresult-android")
                                                 type = "text/plain"
                                             }
                                             context.startActivity(Intent.createChooser(sendIntent, null))

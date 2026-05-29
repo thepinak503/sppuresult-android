@@ -24,6 +24,7 @@ Single-module Android app (`:app`). Package `pinak.sppunotify`.
 | Prefs | DataStore Preferences | `PreferenceManager.kt` — profiles stored as JSON in `Set<String>` |
 | Scraping | Jsoup (results), HttpURLConnection (reval) | `ResultScraper.kt`, `RevaluationScraper.kt` |
 | Background | WorkManager (PeriodicWorkRequest + foreground) | `ResultSyncWorker.kt`, `RevalSyncWorker.kt`, `WorkManagerHelper.kt` |
+| Updates | Remote JSON from GitHub | `RemoteConfigRepository.kt`, `UpdateManager.kt`, `UpdateReceiver.kt` |
 | Web standalone | `index.html` at project root | Vanilla HTML/CSS/JS, separate from Android app |
 
 **Entrypoints**: `ResultWatchApp.kt` (Application), `MainActivity.kt` (Activity).

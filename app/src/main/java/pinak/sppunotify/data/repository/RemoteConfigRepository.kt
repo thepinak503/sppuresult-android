@@ -13,7 +13,10 @@ import javax.inject.Singleton
 class RemoteConfigRepository @Inject constructor(
     private val preferenceManager: PreferenceManager
 ) {
-    private val configUrl = "https://raw.githubusercontent.com/pinak/SPPUResultNotify/main/config.json"
+    companion object {
+        private const val REPO_URL = "https://raw.githubusercontent.com/thepinak503/sppuresult-android/main"
+        private const val CONFIG_URL = "$REPO_URL/config.json"
+    }
 
     data class Announcement(
         val id: String,
@@ -31,7 +34,7 @@ class RemoteConfigRepository @Inject constructor(
 
     suspend fun fetchAppConfig(): AppConfig? = withContext(Dispatchers.IO) {
         try {
-            val response = Jsoup.connect(configUrl)
+            val response = Jsoup.connect(CONFIG_URL)
                 .ignoreContentType(true)
                 .timeout(5000)
                 .execute()

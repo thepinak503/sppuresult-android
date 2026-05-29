@@ -24,6 +24,7 @@ class PreferenceManager @Inject constructor(
         val RESULT_SYNC_INTERVAL = intPreferencesKey("result_sync_interval_min")
         val REVAL_SYNC_INTERVAL = intPreferencesKey("reval_sync_interval_min")
         val EXAM_DATE_SYNC_INTERVAL = intPreferencesKey("exam_date_sync_interval_min")
+        val CIRCULAR_SYNC_INTERVAL = intPreferencesKey("circular_sync_interval_min")
         val WATCHLIST_KEYWORDS = stringSetPreferencesKey("watchlist_keywords")
         val USER_PROFILES = stringSetPreferencesKey("user_profiles")
         val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
@@ -35,6 +36,8 @@ class PreferenceManager @Inject constructor(
         val SYNC_RESULTS_ENABLED = booleanPreferencesKey("sync_results_enabled")
         val SYNC_REVAL_ENABLED = booleanPreferencesKey("sync_reval_enabled")
         val SYNC_EXAM_DATES_ENABLED = booleanPreferencesKey("sync_exam_dates_enabled")
+        val SYNC_CIRCULARS_ENABLED = booleanPreferencesKey("sync_circulars_enabled")
+        val AUTO_UPDATE_ENABLED = booleanPreferencesKey("auto_update_enabled")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
@@ -47,6 +50,7 @@ class PreferenceManager @Inject constructor(
             resultSyncInterval = preferences[PreferencesKeys.RESULT_SYNC_INTERVAL] ?: 15,
             revalSyncInterval = preferences[PreferencesKeys.REVAL_SYNC_INTERVAL] ?: 60,
             examDateSyncInterval = preferences[PreferencesKeys.EXAM_DATE_SYNC_INTERVAL] ?: 180,
+            circularSyncInterval = preferences[PreferencesKeys.CIRCULAR_SYNC_INTERVAL] ?: 240,
             watchlistKeywords = preferences[PreferencesKeys.WATCHLIST_KEYWORDS] ?: emptySet(),
             profiles = profiles,
             activeProfileId = preferences[PreferencesKeys.ACTIVE_PROFILE_ID],
@@ -58,6 +62,8 @@ class PreferenceManager @Inject constructor(
             syncResultsEnabled = preferences[PreferencesKeys.SYNC_RESULTS_ENABLED] ?: true,
             syncRevalEnabled = preferences[PreferencesKeys.SYNC_REVAL_ENABLED] ?: true,
             syncExamDatesEnabled = preferences[PreferencesKeys.SYNC_EXAM_DATES_ENABLED] ?: true,
+            syncCircularsEnabled = preferences[PreferencesKeys.SYNC_CIRCULARS_ENABLED] ?: true,
+            autoUpdateEnabled = preferences[PreferencesKeys.AUTO_UPDATE_ENABLED] ?: true,
             onboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
         )
     }
@@ -107,6 +113,12 @@ class PreferenceManager @Inject constructor(
     suspend fun updateExamDateSyncInterval(intervalMinutes: Int) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.EXAM_DATE_SYNC_INTERVAL] = intervalMinutes
+        }
+    }
+
+    suspend fun updateCircularSyncInterval(intervalMinutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CIRCULAR_SYNC_INTERVAL] = intervalMinutes
         }
     }
 
@@ -198,6 +210,18 @@ class PreferenceManager @Inject constructor(
             preferences[PreferencesKeys.SYNC_EXAM_DATES_ENABLED] = enabled
         }
     }
+
+    suspend fun updateSyncCircularsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SYNC_CIRCULARS_ENABLED] = enabled
+        }
+    }
+
+    suspend fun updateAutoUpdateEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.AUTO_UPDATE_ENABLED] = enabled
+        }
+    }
 }
 
 data class UserPreferences(
@@ -205,6 +229,7 @@ data class UserPreferences(
     val resultSyncInterval: Int,
     val revalSyncInterval: Int,
     val examDateSyncInterval: Int,
+    val circularSyncInterval: Int,
     val watchlistKeywords: Set<String>,
     val profiles: List<UserProfile>,
     val activeProfileId: String?,
@@ -216,5 +241,7 @@ data class UserPreferences(
     val syncResultsEnabled: Boolean = true,
     val syncRevalEnabled: Boolean = true,
     val syncExamDatesEnabled: Boolean = true,
+    val syncCircularsEnabled: Boolean = true,
+    val autoUpdateEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false
 )

@@ -28,7 +28,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.NotInterested
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -42,6 +44,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Star
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import pinak.sppunotify.util.NotificationHelper
+import androidx.compose.runtime.collectAsState
 import pinak.sppunotify.ui.components.AppTopBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -69,9 +78,12 @@ import coil3.compose.AsyncImage
 @Composable
 fun AboutScreen(
     scrollState: ScrollState = rememberScrollState(),
+    viewModel: AboutViewModel = hiltViewModel(),
     onMenuClick: () -> Unit,
 ) {
     val context = LocalContext.current
+    val isChecking by viewModel.isChecking.collectAsState()
+    val updateStatus by viewModel.updateStatus.collectAsState()
 
     var showExpandedLegal by remember { mutableStateOf(false) }
     var showExpandedData by remember { mutableStateOf(false) }
@@ -126,9 +138,9 @@ fun AboutScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
+                OutlinedButton(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/thepinak503/".toUri())
+                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/thepinak503/sppuresult-android".toUri())
                         context.safeStartActivity(intent)
                     },
                     modifier = Modifier.weight(1f),
@@ -138,6 +150,33 @@ fun AboutScreen(
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.github))
                 }
+                
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, "https://github.com/thepinak503/sppuresult-android/stargazers".toUri())
+                        context.safeStartActivity(intent)
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Icon(Icons.Default.Star, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Star Repo")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            TextButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, "https://github.com/thepinak503".toUri())
+                    context.safeStartActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Developer Profile", fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -448,7 +487,43 @@ fun AboutScreen(
                 color = MaterialTheme.colorScheme.outline,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = { 
+                    val notificationHelper = NotificationHelper(context)
+                    viewModel.checkForUpdates(notificationHelper) 
+                },
+                enabled = !isChecking,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
+                if (isChecking) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Checking...")
+                } else {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Check for Updates")
+                }
+            }
+
+            if (updateStatus != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = updateStatus!!,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                )
+                TextButton(onClick = { viewModel.clearStatus() }) {
+                    Text("Dismiss", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // === COPYRIGHT ===
             Row(verticalAlignment = Alignment.CenterVertically) {

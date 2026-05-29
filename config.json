@@ -1,0 +1,11 @@
+{
+  "latest_version_code": 1,
+  "latest_version_name": "1.0.0",
+  "update_url": "https://github.com/thepinak503/sppuresult-android/releases/latest/download/app-release.apk",
+  "latest_announcement": {
+    "id": "welcome_v1",
+    "title": "Welcome to SPPU Result Watch!",
+    "message": "Stay updated with the latest exam results, circulars, and exam dates directly on your phone.",
+    "type": "ANNOUNCEMENT"
+  }
+}

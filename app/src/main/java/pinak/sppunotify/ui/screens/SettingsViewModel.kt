@@ -3,24 +3,43 @@ package pinak.sppunotify.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.data.local.UserPreferences
+import pinak.sppunotify.worker.WorkManagerHelper
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val workManagerHelper: WorkManagerHelper
 ) : ViewModel() {
+
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
     val userPreferences: StateFlow<UserPreferences> = preferenceManager.preferencesFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = UserPreferences(true, 15, 60, 180, emptySet(), emptyList(), null)
+        initialValue = UserPreferences(true, 15, 60, 180, 240, emptySet(), emptyList(), null)
     )
+
+    fun syncAll() {
+        viewModelScope.launch {
+            _isSyncing.value = true
+            val currentPrefs = preferenceManager.preferencesFlow.first()
+            workManagerHelper.updateSyncWork(currentPrefs)
+            delay(1500) // Simulation for visual feedback
+            _isSyncing.value = false
+        }
+    }
 
     fun updateNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -43,6 +62,12 @@ class SettingsViewModel @Inject constructor(
     fun updateExamDateSyncInterval(minutes: Int) {
         viewModelScope.launch {
             preferenceManager.updateExamDateSyncInterval(minutes)
+        }
+    }
+
+    fun updateCircularSyncInterval(minutes: Int) {
+        viewModelScope.launch {
+            preferenceManager.updateCircularSyncInterval(minutes)
         }
     }
 
@@ -86,6 +111,12 @@ class SettingsViewModel @Inject constructor(
     fun updateAppLanguage(languageCode: String) {
         viewModelScope.launch {
             preferenceManager.updateAppLanguage(languageCode)
+        }
+    }
+
+    fun updateAutoUpdateEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferenceManager.updateAutoUpdateEnabled(enabled)
         }
     }
 }

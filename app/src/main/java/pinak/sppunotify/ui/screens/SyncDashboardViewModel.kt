@@ -19,12 +19,15 @@ data class SyncDashboardState(
     val resultEnabled: Boolean = true,
     val revalEnabled: Boolean = true,
     val examDatesEnabled: Boolean = true,
+    val circularsEnabled: Boolean = true,
     val resultRunning: Boolean = false,
     val revalRunning: Boolean = false,
     val examDatesRunning: Boolean = false,
+    val circularsRunning: Boolean = false,
     val resultLastRun: String = "",
     val revalLastRun: String = "",
     val examDatesLastRun: String = "",
+    val circularsLastRun: String = "",
     val recentSyncs: List<SyncEntry> = emptyList()
 )
 
@@ -53,7 +56,8 @@ class SyncDashboardViewModel @Inject constructor(
             _state.value = _state.value.copy(
                 resultEnabled = prefs.syncResultsEnabled,
                 revalEnabled = prefs.syncRevalEnabled,
-                examDatesEnabled = prefs.syncExamDatesEnabled
+                examDatesEnabled = prefs.syncExamDatesEnabled,
+                circularsEnabled = prefs.syncCircularsEnabled
             )
         }
     }
@@ -63,10 +67,9 @@ class SyncDashboardViewModel @Inject constructor(
             when (type) {
                 "results" -> {
                     _state.value = _state.value.copy(resultRunning = true)
-                    // Trigger one-time sync via WorkManager
                     val prefs = preferenceManager.preferencesFlow.first()
                     workManagerHelper.updateSyncWork(prefs.copy(syncResultsEnabled = true, resultSyncInterval = 15))
-                    delay(500)
+                    delay(1200)
                     _state.value = _state.value.copy(
                         resultRunning = false,
                         resultLastRun = formatNow(),
@@ -77,7 +80,7 @@ class SyncDashboardViewModel @Inject constructor(
                     _state.value = _state.value.copy(revalRunning = true)
                     val prefs = preferenceManager.preferencesFlow.first()
                     workManagerHelper.updateSyncWork(prefs.copy(syncRevalEnabled = true, revalSyncInterval = 15))
-                    delay(500)
+                    delay(1200)
                     _state.value = _state.value.copy(
                         revalRunning = false,
                         revalLastRun = formatNow(),
@@ -88,15 +91,33 @@ class SyncDashboardViewModel @Inject constructor(
                     _state.value = _state.value.copy(examDatesRunning = true)
                     val prefs = preferenceManager.preferencesFlow.first()
                     workManagerHelper.updateSyncWork(prefs.copy(syncExamDatesEnabled = true, examDateSyncInterval = 15))
-                    delay(500)
+                    delay(1200)
                     _state.value = _state.value.copy(
                         examDatesRunning = false,
                         examDatesLastRun = formatNow(),
                         recentSyncs = listOf(SyncEntry("Exam Dates", formatNow(), true)) + _state.value.recentSyncs.take(19)
                     )
                 }
+                "circulars" -> {
+                    _state.value = _state.value.copy(circularsRunning = true)
+                    val prefs = preferenceManager.preferencesFlow.first()
+                    workManagerHelper.updateSyncWork(prefs.copy(syncCircularsEnabled = true, circularSyncInterval = 15))
+                    delay(1200)
+                    _state.value = _state.value.copy(
+                        circularsRunning = false,
+                        circularsLastRun = formatNow(),
+                        recentSyncs = listOf(SyncEntry("Circulars", formatNow(), true)) + _state.value.recentSyncs.take(19)
+                    )
+                }
             }
         }
+    }
+
+    fun syncAll() {
+        syncNow("results")
+        syncNow("reval")
+        syncNow("examDates")
+        syncNow("circulars")
     }
 
     fun toggleSync(type: String, enabled: Boolean) {
@@ -113,6 +134,10 @@ class SyncDashboardViewModel @Inject constructor(
                 "examDates" -> {
                     preferenceManager.updateSyncExamDatesEnabled(enabled)
                     _state.value = _state.value.copy(examDatesEnabled = enabled)
+                }
+                "circulars" -> {
+                    preferenceManager.updateSyncCircularsEnabled(enabled)
+                    _state.value = _state.value.copy(circularsEnabled = enabled)
                 }
             }
         }

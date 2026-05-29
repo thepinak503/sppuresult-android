@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
@@ -100,6 +101,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val userPreferences by viewModel.userPreferences.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
 
     var themeMode by remember(userPreferences.themeMode) {
         mutableStateOf(
@@ -161,12 +163,40 @@ fun SettingsScreen(
 
                     if (userPreferences.notificationsEnabled) {
                         Spacer(Modifier.height(16.dp))
+
+                        Button(
+                            onClick = { viewModel.syncAll() },
+                            enabled = !isSyncing,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            )
+                        ) {
+                            if (isSyncing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Syncing...")
+                            } else {
+                                Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Refresh & Sync Now")
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        Spacer(Modifier.height(16.dp))
                         
                         // Result Sync Interval
                         SyncIntervalInput(
                             label = "Result Sync Interval (minutes)",
                             value = userPreferences.resultSyncInterval,
-                            onValueChange = { viewModel.updateResultSyncInterval(it) }
+                            onValueChange = { interval -> viewModel.updateResultSyncInterval(interval) }
                         )
 
                         Spacer(Modifier.height(12.dp))
@@ -175,7 +205,7 @@ fun SettingsScreen(
                         SyncIntervalInput(
                             label = "Revaluation Sync Interval (minutes)",
                             value = userPreferences.revalSyncInterval,
-                            onValueChange = { viewModel.updateRevalSyncInterval(it) }
+                            onValueChange = { interval -> viewModel.updateRevalSyncInterval(interval) }
                         )
 
                         Spacer(Modifier.height(12.dp))
@@ -184,8 +214,35 @@ fun SettingsScreen(
                         SyncIntervalInput(
                             label = "Exam Dates Sync Interval (minutes)",
                             value = userPreferences.examDateSyncInterval,
-                            onValueChange = { viewModel.updateExamDateSyncInterval(it) }
+                            onValueChange = { interval -> viewModel.updateExamDateSyncInterval(interval) }
                         )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        // Circulars Sync Interval
+                        SyncIntervalInput(
+                            label = "Circulars Sync Interval (minutes)",
+                            value = userPreferences.circularSyncInterval,
+                            onValueChange = { interval -> viewModel.updateCircularSyncInterval(interval) }
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        // Auto Update Toggle
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Auto-download Updates", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text("Automatically download app updates when available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(
+                                checked = userPreferences.autoUpdateEnabled,
+                                onCheckedChange = { viewModel.updateAutoUpdateEnabled(it) }
+                            )
+                        }
                     }
                 }
             }

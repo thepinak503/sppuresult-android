@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
@@ -64,6 +65,14 @@ class NotificationHelper(
                 description = "Notifies when new exam form dates are updated"
             }
 
+            val circularChannel = NotificationChannel(
+                CHANNEL_CIRCULARS,
+                "University Circulars",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifies when new university circulars are published!"
+            }
+
             val newsChannel = NotificationChannel(
                 CHANNEL_NEWS,
                 "App Announcements",
@@ -76,6 +85,7 @@ class NotificationHelper(
             notificationManager.createNotificationChannel(downloadChannel)
             notificationManager.createNotificationChannel(revalChannel)
             notificationManager.createNotificationChannel(examDateChannel)
+            notificationManager.createNotificationChannel(circularChannel)
             notificationManager.createNotificationChannel(newsChannel)
         }
     }
@@ -230,6 +240,49 @@ class NotificationHelper(
         trackNotification("EXAM_DATE", "New Exam Form Dates", "${newDates.size} date(s)")
     }
 
+    fun showCircularNotification(count: Int) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_CIRCULARS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("New University Circulars")
+            .setContentText("$count new circular(s) published")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$count new circular(s) have been published on the university website. Tap to view."))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(CIRCULAR_NOTIFICATION_ID, notification)
+        trackNotification("CIRCULAR", "New University Circulars", "$count circular(s)")
+    }
+
+    fun showUpdateNotification(versionName: String, updateUrl: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateUrl)).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_NEWS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("Update Available: v$versionName")
+            .setContentText("A new version of SPPU Result Watch is available. Tap to update.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .build()
+        
+        notificationManager.notify(UPDATE_NOTIFICATION_ID, notification)
+    }
+
     private fun trackNotification(type: String, title: String, message: String) {
         historyDao?.let { dao ->
             notificationScope.launch {
@@ -252,11 +305,14 @@ class NotificationHelper(
         const val CHANNEL_DOWNLOADS = "download_notifications"
         const val CHANNEL_REVAL = "reval_notifications"
         const val CHANNEL_EXAM_DATES = "exam_date_notifications"
+        const val CHANNEL_CIRCULARS = "circular_notifications"
         const val CHANNEL_NEWS = "news_notifications"
         const val GROUP_RESULTS = "pinak.sppunotify.RESULTS"
         const val SUMMARY_ID = 0
         const val REVAL_NOTIFICATION_ID = 100
         const val EXAM_DATE_NOTIFICATION_ID = 101
+        const val CIRCULAR_NOTIFICATION_ID = 103
+        const val UPDATE_NOTIFICATION_ID = 104
         const val NEWS_NOTIFICATION_ID = 102
         const val RESULT_BASE_ID = 1000
     }
