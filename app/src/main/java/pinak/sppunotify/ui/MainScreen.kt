@@ -165,7 +165,7 @@ fun MainScreen() {
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                "v1.1.0",
+                                "v1.2.0",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,

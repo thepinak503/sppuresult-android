@@ -71,10 +71,8 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // 1. Fetch fresh data from DB directly
         val fetched = fetchWidgetData(context)
 
-        // 2. Save to widget state for persistence (future renders)
         try {
             updateAppWidgetState(context, id) { prefs ->
                 prefs.toMutablePreferences().apply {
@@ -89,7 +87,6 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
             Log.e("GlanceWidget", "Failed to persist widget state", e)
         }
 
-        // 3. Render with FRESH data passed directly (not via currentState which may be stale)
         provideContent {
             WidgetContent(
                 status = fetched.statusLevel,
@@ -101,7 +98,6 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
         }
     }
 
-    /** Fetch data from DB and return everything needed for rendering. */
     private suspend fun fetchWidgetData(context: Context): WidgetData {
         return withContext(Dispatchers.IO) {
             try {
@@ -143,7 +139,6 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
                 )
             } catch (e: Exception) {
                 Log.e("GlanceWidget", "fetchWidgetData failed", e)
-                // Return defaults — will show "No results yet" / "Updated Never"
                 WidgetData(
                     statusLevel = "DOWN",
                     responseTime = 0L,
@@ -156,7 +151,6 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
         }
     }
 
-    /** Container for all widget data for a single render. */
     private data class WidgetData(
         val statusLevel: String,
         val responseTime: Long,
@@ -182,17 +176,10 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
             else -> Color(0xFFF44336)
         }
         val statusLabel = when {
-            status == "HEALTHY" -> "Online"
-            isDown -> "Down"
-            status == "SLOW" -> "Slow"
-            else -> "Busy"
-        }
-
-        val statusBarColor = when {
-            isDown -> Color(0xFFF44336)
-            status == "SLOW" -> Color(0xFFFFC107)
-            status == "BUSY" -> Color(0xFFFF9800)
-            else -> Color(0xFF4CAF50)
+            status == "HEALTHY" -> "Portal Online"
+            isDown -> "Portal Down"
+            status == "SLOW" -> "Portal Slow"
+            else -> "Portal Busy"
         }
 
         Column(
@@ -204,111 +191,112 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.Top,
             horizontalAlignment = Alignment.Start
         ) {
-            // ── Header row: status dot + label + time + count + refresh ──
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = GlanceModifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "\u25CF",
-                    style = TextStyle(
-                        color = ColorProvider(statusColor),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Spacer(modifier = GlanceModifier.width(4.dp))
-                Text(
-                    text = statusLabel,
-                    style = TextStyle(
-                        color = ColorProvider(Color.White),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Spacer(modifier = GlanceModifier.width(6.dp))
-
-                if (time > 0) {
-                    Text(
-                        text = "${time}ms",
-                        style = TextStyle(
-                            color = ColorProvider(Color(0xFFAAAAAA)),
-                            fontSize = 10.sp
-                        )
-                    )
-                }
-
-                Spacer(modifier = GlanceModifier.defaultWeight())
-
-                if (total > 0) {
-                    Text(
-                        text = "$total results",
-                        style = TextStyle(
-                            color = ColorProvider(Color(0xFF888888)),
-                            fontSize = 9.sp
-                        )
-                    )
-                }
-
-                Spacer(modifier = GlanceModifier.width(4.dp))
-
-                // Refresh button
-                Text(
-                    text = "\u21BB",
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFFBBBBBB)),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
+                // MATERIAL 3 STYLE BIG PLUS BUTTON
+                Box(
                     modifier = GlanceModifier
-                        .clickable(actionRunCallback<RefreshWidgetCallback>())
-                )
+                        .size(48.dp)
+                        .background(ColorProvider(Color(0xFFEADDFF))) // M3 light primary container
+                        .cornerRadius(16.dp)
+                        .clickable(actionStartActivity<MainActivity>()),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "+",
+                        style = TextStyle(
+                            color = ColorProvider(Color(0xFF21005D)), // M3 on primary container
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    )
+                }
+                
+                Spacer(modifier = GlanceModifier.width(12.dp))
+
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = GlanceModifier
+                                .size(10.dp)
+                                .background(ColorProvider(statusColor))
+                                .cornerRadius(5.dp),
+                            content = {}
+                        )
+                        Spacer(modifier = GlanceModifier.width(6.dp))
+                        Text(
+                            text = statusLabel,
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                    Text(
+                        text = if (time > 0) "${time}ms • $total results" else "$total results",
+                        style = TextStyle(
+                            color = ColorProvider(Color(0xFFCBC4CF)),
+                            fontSize = 12.sp
+                        )
+                    )
+                }
+
+                // BIG TOUCH AREA REFRESH
+                Box(
+                    modifier = GlanceModifier
+                        .size(48.dp)
+                        .clickable(actionRunCallback<RefreshWidgetCallback>()),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "\u21BB",
+                        style = TextStyle(
+                            color = ColorProvider(Color.White),
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = GlanceModifier.height(8.dp))
+
+            // Results list
+            Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+                if (items.isEmpty()) {
+                    Text(
+                        text = "No results yet",
+                        style = TextStyle(color = ColorProvider(Color(0xFF888888)), fontSize = 13.sp),
+                        modifier = GlanceModifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    Column {
+                        items.take(4).forEach { item ->
+                            ResultItemRow(item = item)
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = GlanceModifier.height(4.dp))
 
-            // ── Status bar ──
-            Box(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(ColorProvider(statusBarColor)),
-                content = {}
-            )
-
-            Spacer(modifier = GlanceModifier.height(6.dp))
-
-            // ── Results list ──
-            if (items.isEmpty()) {
-                Text(
-                    text = "No results yet",
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFF888888)),
-                        fontSize = 12.sp
-                    ),
-                    modifier = GlanceModifier
-                        .padding(vertical = 8.dp)
-                        .defaultWeight()
-                )
-            } else {
-                items.forEach { item ->
-                    ResultItemRow(item = item)
-                }
-            }
-
-            Spacer(modifier = GlanceModifier.height(2.dp))
-
-            // ── Footer: last updated time ──
+            // Footer
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = GlanceModifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Updated $updated",
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFF666666)),
-                        fontSize = 8.sp
-                    )
+                    text = "Sync: $updated",
+                    style = TextStyle(color = ColorProvider(Color(0xFF938F99)), fontSize = 10.sp)
+                )
+                Spacer(modifier = GlanceModifier.defaultWeight())
+                Text(
+                    text = "SPPU Result Watch",
+                    style = TextStyle(color = ColorProvider(Color(0xFF938F99).copy(alpha = 0.5f)), fontSize = 9.sp)
                 )
             }
         }
@@ -320,28 +308,18 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .clickable(actionStartActivity<MainActivity>())
-                .padding(vertical = 4.dp)
+                .padding(vertical = 3.dp)
         ) {
-            // Title
             Text(
                 text = item.title,
                 maxLines = 1,
-                style = TextStyle(
-                    color = ColorProvider(Color.White),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                ),
+                style = TextStyle(color = ColorProvider(Color.White), fontSize = 12.sp, fontWeight = FontWeight.Medium),
                 modifier = GlanceModifier.fillMaxWidth()
             )
-
-            // Date
             if (item.date.isNotEmpty()) {
                 Text(
                     text = item.date,
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFF999999)),
-                        fontSize = 9.sp
-                    ),
+                    style = TextStyle(color = ColorProvider(Color(0xFF938F99)), fontSize = 10.sp),
                     modifier = GlanceModifier.padding(top = 1.dp)
                 )
             }
@@ -387,15 +365,6 @@ class RefreshWidgetCallback : ActionCallback {
             GlanceServerStatusWidget().update(context, glanceId)
         } catch (e: Exception) {
             Log.e("RefreshWidget", "Widget manual refresh failed", e)
-            updateAppWidgetState(context, glanceId) { prefs ->
-                prefs.toMutablePreferences().apply {
-                    this[GlanceWidgetKeys.statusLevel] = "DOWN"
-                    this[GlanceWidgetKeys.responseTime] = 0L
-                    this[GlanceWidgetKeys.lastUpdated] = "error"
-                    this[GlanceWidgetKeys.resultItems] = emptySet()
-                }
-            }
-            GlanceServerStatusWidget().update(context, glanceId)
         }
     }
 }

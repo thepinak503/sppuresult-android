@@ -33,6 +33,7 @@ class RevalSyncWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val repository: RevalRepository,
     private val preferenceManager: pinak.sppunotify.data.local.PreferenceManager,
+    private val syncLogDao: pinak.sppunotify.data.local.SyncLogDao,
     private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
@@ -53,10 +54,12 @@ class RevalSyncWorker @AssistedInject constructor(
                 val helper = NotificationHelper(applicationContext, notificationHistoryDao)
                 helper.showRevalNotification(newCourses.size)
             }
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "REVAL", status = "SUCCESS", message = "${newCourses.size} new reval courses"))
             rescheduleIfNeeded()
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Reval sync failed", e)
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "REVAL", status = "FAILED", message = e.message ?: "Unknown error"))
             if (isServerDown(e) || runAttemptCount >= 3) {
                 rescheduleIfNeeded()
                 Result.success()

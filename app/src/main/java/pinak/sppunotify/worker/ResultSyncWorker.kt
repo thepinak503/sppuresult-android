@@ -36,6 +36,7 @@ class ResultSyncWorker @AssistedInject constructor(
     private val remoteConfigRepository: RemoteConfigRepository,
     private val preferenceManager: PreferenceManager,
     private val updateManager: pinak.sppunotify.util.UpdateManager,
+    private val syncLogDao: pinak.sppunotify.data.local.SyncLogDao,
     private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
@@ -57,15 +58,29 @@ class ResultSyncWorker @AssistedInject constructor(
             val newResults = repository.fetchResults()
             if (newResults.isNotEmpty() && prefs.notificationsEnabled) {
                 val keywords = prefs.watchlistKeywords
-                val matched = newResults.filter { result ->
-                    keywords.isEmpty() || keywords.any { keyword ->
+                val priorityKeywords = prefs.priorityKeywords
+                
+                val priorityMatched = newResults.filter { result ->
+                    priorityKeywords.isNotEmpty() && priorityKeywords.any { keyword ->
                         result.title.contains(keyword, ignoreCase = true)
                     }
                 }
                 
-                if (matched.isNotEmpty()) {
+                val normalMatched = newResults.filter { result ->
+                    (keywords.isEmpty() || keywords.any { keyword ->
+                        result.title.contains(keyword, ignoreCase = true)
+                    }) && priorityMatched.none { it.id == result.id }
+                }
+                
+                if (priorityMatched.isNotEmpty()) {
+                    notificationHelper.showPriorityResultNotification(
+                        priorityMatched.map { "⭐ PRIORITY RESULT ⭐" to it.title }
+                    )
+                }
+                
+                if (normalMatched.isNotEmpty()) {
                     notificationHelper.showResultNotification(
-                        matched.map { "New Result Published!" to it.title }
+                        normalMatched.map { "New Result Published!" to it.title }
                     )
                 }
             }
@@ -145,10 +160,12 @@ class ResultSyncWorker @AssistedInject constructor(
                 notificationHelper.showNewsNotification("Sync Success", "Results checked at ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}", "ANNOUNCEMENT")
             }
             
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "RESULTS", status = "SUCCESS", message = "${newResults.size} results found"))
             rescheduleIfNeeded()
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "ResultSyncWorker failed", e)
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "RESULTS", status = "FAILED", message = e.message ?: "Unknown error"))
             repository.updateServerStatus() // Mark as down if failed
             if (prefs.developerMode) {
                 notificationHelper.showNewsNotification("Sync Failed", e.message ?: "Unknown error", "ALERT")

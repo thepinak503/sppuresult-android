@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pinak.sppunotify.data.local.PreferenceManager
+import pinak.sppunotify.data.local.SyncLogDao
 import pinak.sppunotify.worker.WorkManagerHelper
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,19 +29,24 @@ data class SyncDashboardState(
     val revalLastRun: String = "",
     val examDatesLastRun: String = "",
     val circularsLastRun: String = "",
-    val recentSyncs: List<SyncEntry> = emptyList()
+    val recentSyncs: List<SyncEntry> = emptyList(),
+    val successCount: Int = 0,
+    val failedCount: Int = 0,
+    val uptimePercent: Int = 100
 )
 
 data class SyncEntry(
     val type: String,
     val time: String,
-    val success: Boolean
+    val success: Boolean,
+    val message: String = ""
 )
 
 @HiltViewModel
 class SyncDashboardViewModel @Inject constructor(
     private val preferenceManager: PreferenceManager,
-    private val workManagerHelper: WorkManagerHelper
+    private val workManagerHelper: WorkManagerHelper,
+    private val syncLogDao: SyncLogDao
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SyncDashboardState())
@@ -48,6 +54,35 @@ class SyncDashboardViewModel @Inject constructor(
 
     init {
         loadState()
+        observeLogs()
+    }
+
+    private fun observeLogs() {
+        viewModelScope.launch {
+            syncLogDao.getRecentLogs().collect { logs ->
+                val entries = logs.map { log ->
+                    SyncEntry(
+                        type = log.type,
+                        time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(log.timestamp)),
+                        success = log.status == "SUCCESS",
+                        message = log.message
+                    )
+                }
+                
+                val last24h = System.currentTimeMillis() - (24 * 60 * 60 * 1000)
+                val success = syncLogDao.getSuccessCount(last24h)
+                val failed = syncLogDao.getFailedCount(last24h)
+                val total = success + failed
+                val uptime = if (total > 0) (success * 100) / total else 100
+
+                _state.value = _state.value.copy(
+                    recentSyncs = entries,
+                    successCount = success,
+                    failedCount = failed,
+                    uptimePercent = uptime
+                )
+            }
+        }
     }
 
     private fun loadState() {

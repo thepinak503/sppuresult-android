@@ -22,6 +22,7 @@ import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
+import kotlinx.coroutines.delay
 
 @SuppressLint("CustomX509TrustManager", "TrustAllX509TrustManager")
 @Singleton
@@ -138,6 +139,26 @@ class ResultScraper @Inject constructor() {
                 set(java.util.Calendar.MILLISECOND, 0)
             }.timeInMillis
         }
+
+        private suspend fun <T> retry(
+            times: Int = 3,
+            initialDelay: Long = 1000,
+            maxDelay: Long = 5000,
+            factor: Double = 2.0,
+            block: suspend () -> T
+        ): T {
+            var currentDelay = initialDelay
+            repeat(times - 1) {
+                try {
+                    return block()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Retry failed, next delay $currentDelay ms: ${e.message}")
+                    delay(currentDelay)
+                    currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
+                }
+            }
+            return block() // final attempt
+        }
     }
 
     private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -216,7 +237,7 @@ class ResultScraper @Inject constructor() {
         val results = mutableListOf<ResultDto>()
         try {
             val url = if (period == 0) DASHBOARD_URL else "$BASE_URL/Result/Dashboard/session?Exam_Period=$period"
-            val doc = newSession().url(url).get()
+            val doc = retry { newSession().url(url).get() }
             
             doc.select("#tblRVList tr").drop(1).forEach { row ->
                 val cols = row.select("td")
@@ -326,17 +347,19 @@ class ResultScraper @Inject constructor() {
     ): SubmitResult? = withContext(Dispatchers.IO) {
         val ses = newSession()
         try {
-            val resp = ses.url("$BASE_URL/SPPU%20ONLINE%20RESULT%20DISPLAY")
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .method(Connection.Method.POST)
-                .data("PatternID", patternId)
-                .data("PatternName", patternName)
-                .data("SeatNo", seatNo)
-                .data("MotherName", motherName)
-                .data("CaptchaText", captchaText)
-                .data("OrgCaptchaText", orgCaptchaText)
-                .data("CaptchaImageSTR", captchaImageStr)
-                .ignoreContentType(true).execute()
+            val resp = retry {
+                ses.url("$BASE_URL/SPPU%20ONLINE%20RESULT%20DISPLAY")
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .method(Connection.Method.POST)
+                    .data("PatternID", patternId)
+                    .data("PatternName", patternName)
+                    .data("SeatNo", seatNo)
+                    .data("MotherName", motherName)
+                    .data("CaptchaText", captchaText)
+                    .data("OrgCaptchaText", orgCaptchaText)
+                    .data("CaptchaImageSTR", captchaImageStr)
+                    .ignoreContentType(true).execute()
+            }
 
             if (resp.statusCode() == 200) {
                 val ct = resp.contentType() ?: "application/octet-stream"

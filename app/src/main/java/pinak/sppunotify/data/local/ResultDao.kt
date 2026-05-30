@@ -35,6 +35,9 @@ interface ResultDao {
     @Query("SELECT * FROM results WHERE isBookmarked = 1 ORDER BY publishedTimestamp DESC")
     fun getBookmarkedResults(): Flow<List<ResultEntity>>
 
+    @Query("SELECT * FROM results WHERE isBookmarked = 1 ORDER BY publishedTimestamp DESC")
+    suspend fun getAllBookmarks(): List<ResultEntity>
+
     @Query("SELECT isBookmarked FROM results WHERE id = :resultId")
     suspend fun isBookmarked(resultId: String): Boolean?
 }

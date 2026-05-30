@@ -1,7 +1,6 @@
 package pinak.sppunotify.ui.screens
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,6 +10,10 @@ import android.provider.Settings
 import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.core.net.toUri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import pinak.sppunotify.util.safeStartActivity
 import pinak.sppunotify.data.local.UserPreferences
 import androidx.compose.foundation.layout.Arrangement
@@ -39,8 +42,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
@@ -49,20 +50,20 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.filled.EventNote
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -70,11 +71,15 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -100,8 +105,57 @@ fun SettingsScreen(
     onMenuClick: () -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val userPreferences by viewModel.userPreferences.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var pendingBackupJson by remember { mutableStateOf<String?>(null) }
+    val saveBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            pendingBackupJson?.let { json ->
+                context.contentResolver.openOutputStream(it)?.use { os ->
+                    os.write(json.toByteArray())
+                }
+                scope.launch { snackbarHostState.showSnackbar("Backup saved successfully!") }
+            }
+        }
+    }
+
+    val importBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            try {
+                context.contentResolver.openInputStream(it)?.use { isr ->
+                    val json = isr.bufferedReader().readText()
+                    viewModel.importBackup(json)
+                }
+            } catch (e: Exception) {
+                scope.launch { snackbarHostState.showSnackbar("Failed to read backup file") }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is SettingsUiEvent.SaveBackup -> {
+                    pendingBackupJson = event.json
+                    saveBackupLauncher.launch("sppu_backup_${System.currentTimeMillis()}.json")
+                }
+                is SettingsUiEvent.ShowMessage -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+                is SettingsUiEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+            }
+        }
+    }
 
     var themeMode by remember(userPreferences.themeMode) {
         mutableStateOf(
@@ -114,6 +168,7 @@ fun SettingsScreen(
     val isBatteryOptIgnored = powerManager.isIgnoringBatteryOptimizations(context.packageName)
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(
                 title = "Settings",
@@ -382,6 +437,64 @@ fun SettingsScreen(
                 }
             }
 
+            // Priority Watchlist Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.15f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Star, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                        Spacer(Modifier.width(10.dp))
+                        Text("⭐ Priority Watchlist", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Get High Importance notifications (custom sound & vibration) for results matching these keywords.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+
+                    var newPriorityKeyword by remember { mutableStateOf("") }
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = newPriorityKeyword,
+                            onValueChange = { newPriorityKeyword = it },
+                            placeholder = { Text("e.g. TE Mechanical 2019", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(onClick = { viewModel.addPriorityKeyword(newPriorityKeyword); newPriorityKeyword = "" }, enabled = newPriorityKeyword.isNotBlank()) {
+                            Icon(Icons.Default.Add, contentDescription = "Add")
+                        }
+                    }
+
+                    if (userPreferences.priorityKeywords.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            userPreferences.priorityKeywords.forEach { keyword ->
+                                InputChip(
+                                    selected = true,
+                                    onClick = { viewModel.removePriorityKeyword(keyword) },
+                                    label = { Text(keyword) },
+                                    trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = InputChipDefaults.inputChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.tertiary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onTertiary,
+                                        selectedTrailingIconColor = MaterialTheme.colorScheme.onTertiary
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Theme Selector
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -440,6 +553,44 @@ fun SettingsScreen(
                                 ThemeMode.DARK -> stringResource(R.string.theme_dark)
                                 ThemeMode.BLACK -> stringResource(R.string.theme_black)
                             }, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+
+            // Backup & Restore
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Save, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Backup & Restore", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Export your profiles and keywords to a file or restore them from a previous backup.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = { importBackupLauncher.launch("*/*") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Import")
+                        }
+                        Button(
+                            onClick = { viewModel.exportBackup() },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Export")
                         }
                     }
                 }

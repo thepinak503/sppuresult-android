@@ -38,6 +38,7 @@ class PreferenceManager @Inject constructor(
         val SYNC_EXAM_DATES_ENABLED = booleanPreferencesKey("sync_exam_dates_enabled")
         val SYNC_CIRCULARS_ENABLED = booleanPreferencesKey("sync_circulars_enabled")
         val AUTO_UPDATE_ENABLED = booleanPreferencesKey("auto_update_enabled")
+        val PRIORITY_KEYWORDS = stringSetPreferencesKey("priority_keywords")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
@@ -64,6 +65,7 @@ class PreferenceManager @Inject constructor(
             syncExamDatesEnabled = preferences[PreferencesKeys.SYNC_EXAM_DATES_ENABLED] ?: true,
             syncCircularsEnabled = preferences[PreferencesKeys.SYNC_CIRCULARS_ENABLED] ?: true,
             autoUpdateEnabled = preferences[PreferencesKeys.AUTO_UPDATE_ENABLED] ?: true,
+            priorityKeywords = preferences[PreferencesKeys.PRIORITY_KEYWORDS] ?: emptySet(),
             onboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
         )
     }
@@ -222,6 +224,35 @@ class PreferenceManager @Inject constructor(
             preferences[PreferencesKeys.AUTO_UPDATE_ENABLED] = enabled
         }
     }
+
+    suspend fun addPriorityKeyword(keyword: String) {
+        val trimmed = keyword.trim()
+        if (trimmed.isEmpty()) return
+        dataStore.edit { preferences ->
+            val current = preferences[PreferencesKeys.PRIORITY_KEYWORDS] ?: emptySet()
+            preferences[PreferencesKeys.PRIORITY_KEYWORDS] = current + trimmed
+        }
+    }
+
+    suspend fun removePriorityKeyword(keyword: String) {
+        dataStore.edit { preferences ->
+            val current = preferences[PreferencesKeys.PRIORITY_KEYWORDS] ?: emptySet()
+            preferences[PreferencesKeys.PRIORITY_KEYWORDS] = current - keyword
+        }
+    }
+
+    suspend fun restoreFromBackup(backup: pinak.sppunotify.util.AppBackup) {
+        dataStore.edit { preferences ->
+            val encryptedProfiles = ProfileSerializer.serializeEncryptedList(backup.profiles)
+            preferences[PreferencesKeys.USER_PROFILES] = encryptedProfiles
+            preferences[PreferencesKeys.WATCHLIST_KEYWORDS] = backup.watchlistKeywords
+            preferences[PreferencesKeys.PRIORITY_KEYWORDS] = backup.priorityKeywords
+            
+            if (preferences[PreferencesKeys.ACTIVE_PROFILE_ID] == null && backup.profiles.isNotEmpty()) {
+                preferences[PreferencesKeys.ACTIVE_PROFILE_ID] = backup.profiles.first().id
+            }
+        }
+    }
 }
 
 data class UserPreferences(
@@ -243,5 +274,6 @@ data class UserPreferences(
     val syncExamDatesEnabled: Boolean = true,
     val syncCircularsEnabled: Boolean = true,
     val autoUpdateEnabled: Boolean = true,
+    val priorityKeywords: Set<String> = emptySet(),
     val onboardingCompleted: Boolean = false
 )

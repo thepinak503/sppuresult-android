@@ -3,7 +3,9 @@ package pinak.sppunotify.data.local
 import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Immutable
 @Entity(tableName = "results")
 data class ResultEntity(

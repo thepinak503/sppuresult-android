@@ -27,6 +27,7 @@ class ExamDateSyncWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val repository: ExamDateRepository,
     private val preferenceManager: PreferenceManager,
+    private val syncLogDao: pinak.sppunotify.data.local.SyncLogDao,
     private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
@@ -44,10 +45,12 @@ class ExamDateSyncWorker @AssistedInject constructor(
                 val notificationHelper = NotificationHelper(applicationContext, notificationHistoryDao)
                 notificationHelper.showExamDateNotification(newDates.map { it.courseName })
             }
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "EXAM_DATES", status = "SUCCESS", message = "${newDates.size} dates updated"))
             rescheduleIfNeeded()
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Sync failed", e)
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "EXAM_DATES", status = "FAILED", message = e.message ?: "Unknown error"))
             if (isServerDown(e)) {
                 rescheduleIfNeeded()
                 Result.success()

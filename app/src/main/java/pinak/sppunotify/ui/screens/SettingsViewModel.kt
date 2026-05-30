@@ -8,22 +8,29 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
 import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.data.local.UserPreferences
 import pinak.sppunotify.worker.WorkManagerHelper
+import pinak.sppunotify.util.BackupManager
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val preferenceManager: PreferenceManager,
-    private val workManagerHelper: WorkManagerHelper
+    private val workManagerHelper: WorkManagerHelper,
+    private val backupManager: BackupManager
 ) : ViewModel() {
 
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    private val _uiEvent = Channel<SettingsUiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     val userPreferences: StateFlow<UserPreferences> = preferenceManager.preferencesFlow.stateIn(
         scope = viewModelScope,
@@ -84,6 +91,19 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun addPriorityKeyword(keyword: String) {
+        if (keyword.isBlank()) return
+        viewModelScope.launch {
+            preferenceManager.addPriorityKeyword(keyword)
+        }
+    }
+
+    fun removePriorityKeyword(keyword: String) {
+        viewModelScope.launch {
+            preferenceManager.removePriorityKeyword(keyword)
+        }
+    }
+
     fun addProfile(name: String, seatNo: String, motherName: String) {
         viewModelScope.launch {
             preferenceManager.saveProfile(name, seatNo, motherName)
@@ -119,4 +139,32 @@ class SettingsViewModel @Inject constructor(
             preferenceManager.updateAutoUpdateEnabled(enabled)
         }
     }
+
+    fun exportBackup() {
+        viewModelScope.launch {
+            try {
+                val json = backupManager.createBackup()
+                _uiEvent.send(SettingsUiEvent.SaveBackup(json))
+            } catch (e: Exception) {
+                _uiEvent.send(SettingsUiEvent.ShowError("Failed to create backup: ${e.message}"))
+            }
+        }
+    }
+
+    fun importBackup(jsonContent: String) {
+        viewModelScope.launch {
+            val success = backupManager.restoreBackup(jsonContent)
+            if (success) {
+                _uiEvent.send(SettingsUiEvent.ShowMessage("Backup restored successfully!"))
+            } else {
+                _uiEvent.send(SettingsUiEvent.ShowError("Invalid backup file or restore failed."))
+            }
+        }
+    }
+}
+
+sealed class SettingsUiEvent {
+    data class SaveBackup(val json: String) : SettingsUiEvent()
+    data class ShowMessage(val message: String) : SettingsUiEvent()
+    data class ShowError(val message: String) : SettingsUiEvent()
 }

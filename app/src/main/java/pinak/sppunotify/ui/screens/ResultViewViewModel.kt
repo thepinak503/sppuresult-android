@@ -160,11 +160,18 @@ class ResultViewViewModel @Inject constructor(
             if (submitResult != null) {
                 val mt = submitResult.mimeType.lowercase()
                 val ext = if (mt.contains("pdf")) "pdf" else "html"
-                val safeName = result.title
-                    .replace(Regex("[^a-zA-Z0-9_\\- ]"), "")
-                    .take(80)
-                    .trim()
-                val suggestedName = "${safeName}_${result.publishedDate}.$ext"
+                
+                // ULTRA DYNAMIC NAMING
+                val deptTag = if (result.department.isNotBlank() && result.department != "Other UG") "[${result.department}]" else ""
+                val seatTag = "(${s.seatNo})"
+                val titleSlug = result.title
+                    .replace(Regex("[^a-zA-Z0-9]"), " ")
+                    .replace(Regex("\\s+"), "_")
+                    .take(50)
+                    .trim('_')
+                
+                val suggestedName = "${deptTag}${titleSlug}_${seatTag}_${result.publishedDate.replace(" ", "-")}.$ext"
+
                 _state.value = _state.value.copy(
                     isLoading = false,
                     resultBytes = submitResult.bytes,

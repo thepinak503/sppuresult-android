@@ -117,6 +117,34 @@ fun SyncDashboardScreen(
                     accent = MaterialTheme.colorScheme.error
                 )
 
+                // Sync Statistics Section
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(Icons.Default.Assessment, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Text("Sync Statistics (24h)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            StatItem("Success", state.successCount.toString(), MaterialTheme.colorScheme.primary)
+                            StatItem("Failed", state.failedCount.toString(), MaterialTheme.colorScheme.error)
+                            StatItem("Uptime", "${state.uptimePercent}%", MaterialTheme.colorScheme.secondary)
+                        }
+                    }
+                }
+
                 // Sync History Section
                 Card(
                     shape = RoundedCornerShape(24.dp),
@@ -173,6 +201,14 @@ fun SyncDashboardScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StatItem(label: String, value: String, color: androidx.compose.ui.graphics.Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = color)
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

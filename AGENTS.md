@@ -20,11 +20,11 @@ Single-module Android app (`:app`). Package `pinak.sppunotify`.
 |---|---|---|
 | UI | Jetpack Compose + Navigation Compose | `MainActivity.kt` (entry), `MainScreen.kt` (NavHost with 8 tabs) |
 | DI | Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltWorker`) | `AppModule.kt`, `ResultWatchApp.kt` |
-| Local DB | Room v5 (4 migrations: 1→5) | `ResultDatabase.kt` — 3 tables: `results`, `reval_courses`, `downloaded_results` |
-| Prefs | DataStore Preferences | `PreferenceManager.kt` — profiles stored as JSON in `Set<String>` |
-| Scraping | Jsoup (results), HttpURLConnection (reval) | `ResultScraper.kt`, `RevaluationScraper.kt` |
-| Background | WorkManager (PeriodicWorkRequest + foreground) | `ResultSyncWorker.kt`, `RevalSyncWorker.kt`, `WorkManagerHelper.kt` |
-| Updates | Remote JSON from GitHub | `RemoteConfigRepository.kt`, `UpdateManager.kt`, `UpdateReceiver.kt` |
+| Local DB | Room v10 (9 migrations: 1→10) | `ResultDatabase.kt` — 6 tables: `results`, `reval_courses`, `downloaded_results`, `circulars`, `exam_dates`, `notification_history` |
+| Prefs | DataStore Preferences | `PreferenceManager.kt` — profiles, sync intervals, auto-update toggle |
+| Scraping | Jsoup (results, circulars), HttpURLConnection (reval) | `ResultScraper.kt`, `RevaluationScraper.kt`, `CircularRepository.kt` |
+| Background | WorkManager (PeriodicWorkRequest + foreground) | `ResultSyncWorker.kt`, `RevalSyncWorker.kt`, `ExamDateSyncWorker.kt`, `CircularSyncWorker.kt` |
+| Updates | Remote JSON from GitHub | `RemoteConfigRepository.kt`, `UpdateManager.kt` (Auto-download + Install) |
 | Web standalone | `index.html` at project root | Vanilla HTML/CSS/JS, separate from Android app |
 
 **Entrypoints**: `ResultWatchApp.kt` (Application), `MainActivity.kt` (Activity).
@@ -32,21 +32,21 @@ Single-module Android app (`:app`). Package `pinak.sppunotify`.
 ## Key Quirks
 
 - **Release builds use debug signing** (`signingConfigs.getByName("debug")` in `release` block).
-- **Locale hard-filtered** to English only: `localeFilters += "en"`.
+- **Locale hard-filtered** to English and Marathi: `localeFilters += "en", "mr"`.
 - **WorkManager initializer removed** from manifest — custom init via `HiltWorkerFactory` in `ResultWatchApp`.
 - **Network security**: cleartext allowed for `unipune.ac.in` only; custom RapidSSL CA cert pinned.
 - **KSP room.schemaLocation** = `$projectDir/schemas`.
 - **Profiles** stored as JSON strings in DataStore `Set<String>` (see `UserProfile.kt`).
 - **High refresh rate** (120/144Hz) enabled via reflection on `Window.setFrameRatePowerSavingsBalanced`.
-- **`service/` directory exists but is empty**.
+- **Auto-Update**: App checks `config.json` on GitHub and can auto-download/install updates.
 
 ## Dependencies (notable versions)
 
-- AGP 8.8.1, Kotlin 2.1.10, KSP 2.1.10-1.0.29
-- Compose BOM 2025.02.00, Hilt 2.55, Room 2.6.1, WorkManager 2.10.0
-- Jsoup 1.18.3, Coil 2.7.0, kotlinx-serialization 1.7.3
+- AGP 9.2.1, Kotlin 2.3.21, KSP 2.3.9
+- Compose BOM 2026.05.01, Hilt 2.59.2, Room 2.8.4, WorkManager 2.11.2
+- Jsoup 1.22.2, Coil 3.4.0, kotlinx-serialization 1.11.0
 - Gradle 9.4.1
-- Min SDK 24, Target/Compile SDK 36
+- Min SDK 24, Target/Compile SDK 36/37
 
 ## Reference
 

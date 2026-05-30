@@ -19,6 +19,7 @@ class CircularSyncWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val repository: CircularRepository,
     private val preferenceManager: PreferenceManager,
+    private val syncLogDao: pinak.sppunotify.data.local.SyncLogDao,
     private val notificationHistoryDao: NotificationHistoryDao
 ) : CoroutineWorker(context, workerParams) {
 
@@ -38,9 +39,11 @@ class CircularSyncWorker @AssistedInject constructor(
                     notificationHelper.showCircularNotification(freshCount)
                 }
             }
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "CIRCULAR", status = "SUCCESS", message = "$freshCount new circulars"))
             Result.success()
         } catch (e: Exception) {
             Log.e("CircularSyncWorker", "Circular sync failed", e)
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "CIRCULAR", status = "FAILED", message = e.message ?: "Unknown error"))
             Result.retry()
         }
     }

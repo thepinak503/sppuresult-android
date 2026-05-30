@@ -4,7 +4,19 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 
-@Database(entities = [ResultEntity::class, RevalCourseEntity::class, DownloadedResultEntity::class, CircularEntity::class, ExamDateEntity::class, NotificationHistoryEntity::class], version = 10, exportSchema = true)
+@Database(
+    entities = [
+        ResultEntity::class, 
+        RevalCourseEntity::class, 
+        DownloadedResultEntity::class, 
+        CircularEntity::class, 
+        ExamDateEntity::class, 
+        NotificationHistoryEntity::class,
+        SyncLogEntity::class
+    ], 
+    version = 11, 
+    exportSchema = true
+)
 abstract class ResultDatabase : RoomDatabase() {
     abstract val dao: ResultDao
     abstract val revalDao: RevalCourseDao
@@ -12,8 +24,12 @@ abstract class ResultDatabase : RoomDatabase() {
     abstract val circularDao: CircularDao
     abstract val examDateDao: ExamDateDao
     abstract val notificationHistoryDao: NotificationHistoryDao
+    abstract val syncLogDao: SyncLogDao
 
     companion object {
+        val MIGRATION_10_11 = Migration(10, 11) { db ->
+            db.execSQL("CREATE TABLE IF NOT EXISTS sync_logs (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, status TEXT NOT NULL, message TEXT NOT NULL, timestamp INTEGER NOT NULL DEFAULT 0)")
+        }
         val MIGRATION_7_8 = Migration(7, 8) { db ->
             db.execSQL("CREATE TABLE IF NOT EXISTS exam_dates (courseName TEXT NOT NULL PRIMARY KEY, status TEXT NOT NULL, startDate TEXT NOT NULL, endDateWithoutLateFee TEXT NOT NULL, endDateWithLateFee TEXT NOT NULL, paymentLinkEndDate TEXT NOT NULL, fetchedAt INTEGER NOT NULL DEFAULT 0)")
         }

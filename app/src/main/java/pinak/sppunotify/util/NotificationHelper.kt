@@ -40,6 +40,19 @@ class NotificationHelper(
                 description = "Notifies when new results are published"
                 setShowBadge(true)
             }
+
+            val priorityChannel = NotificationChannel(
+                CHANNEL_PRIORITY,
+                "Priority Watchlist",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "High-priority alerts for starred keywords"
+                enableLights(true)
+                lightColor = android.graphics.Color.RED
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+                setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, null)
+            }
             
             val downloadChannel = NotificationChannel(
                 CHANNEL_DOWNLOADS,
@@ -82,6 +95,7 @@ class NotificationHelper(
             }
             
             notificationManager.createNotificationChannel(resultChannel)
+            notificationManager.createNotificationChannel(priorityChannel)
             notificationManager.createNotificationChannel(downloadChannel)
             notificationManager.createNotificationChannel(revalChannel)
             notificationManager.createNotificationChannel(examDateChannel)
@@ -140,6 +154,18 @@ class NotificationHelper(
     }
 
     fun showResultNotification(results: List<Pair<String, String>>) {
+        showGenericResultNotification(results, CHANNEL_RESULTS, GROUP_RESULTS)
+    }
+
+    fun showPriorityResultNotification(results: List<Pair<String, String>>) {
+        showGenericResultNotification(results, CHANNEL_PRIORITY, GROUP_PRIORITY)
+    }
+
+    private fun showGenericResultNotification(
+        results: List<Pair<String, String>>,
+        channelId: String,
+        groupKey: String
+    ) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -150,50 +176,55 @@ class NotificationHelper(
 
         if (results.size == 1) {
             val (title, message) = results.first()
-            // Rich expandable notification with dept-style formatting
-            val bigText = "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
-            val notification = NotificationCompat.Builder(context, CHANNEL_RESULTS)
+            val bigText = if (channelId == CHANNEL_PRIORITY) "⭐ STARRED MATCH ⭐\n\n$message" else "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
+            val notification = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setGroup(GROUP_RESULTS)
+                .setGroup(groupKey)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
+                .apply {
+                    if (channelId == CHANNEL_PRIORITY) {
+                        setCategory(NotificationCompat.CATEGORY_ALARM)
+                        setDefaults(NotificationCompat.DEFAULT_ALL)
+                    }
+                }
                 .build()
             notificationManager.notify(message.hashCode(), notification)
         } else {
             val summaryText = "${results.size} new result(s) published"
             results.forEach { (title, message) ->
-                val bigText = "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
-                val notification = NotificationCompat.Builder(context, CHANNEL_RESULTS)
+                val bigText = if (channelId == CHANNEL_PRIORITY) "⭐ STARRED MATCH ⭐\n\n$message" else "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
+                val notification = NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setGroup(GROUP_RESULTS)
+                    .setGroup(groupKey)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)
                     .build()
                 notificationManager.notify(message.hashCode(), notification)
             }
 
-            val summary = NotificationCompat.Builder(context, CHANNEL_RESULTS)
+            val summary = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("New Results Available")
+                .setContentTitle(if (channelId == CHANNEL_PRIORITY) "Priority Results Available" else "New Results Available")
                 .setContentText(summaryText)
                 .setStyle(NotificationCompat.BigTextStyle().bigText("$summaryText\n\n${results.joinToString("\\n") { it.second }}"))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setGroup(GROUP_RESULTS)
+                .setGroup(groupKey)
                 .setGroupSummary(true)
                 .setAutoCancel(true)
                 .build()
 
-            notificationManager.notify(SUMMARY_ID, summary)
+            notificationManager.notify(if (channelId == CHANNEL_PRIORITY) PRIORITY_SUMMARY_ID else SUMMARY_ID, summary)
         }
-        results.forEach { trackNotification("RESULT", it.first, it.second) }
+        results.forEach { trackNotification(if (channelId == CHANNEL_PRIORITY) "PRIORITY" else "RESULT", it.first, it.second) }
     }
 
     fun showDownloadNotification(success: Boolean, fileName: String) {
@@ -306,9 +337,12 @@ class NotificationHelper(
         const val CHANNEL_REVAL = "reval_notifications"
         const val CHANNEL_EXAM_DATES = "exam_date_notifications"
         const val CHANNEL_CIRCULARS = "circular_notifications"
+        const val CHANNEL_PRIORITY = "priority_notifications"
         const val CHANNEL_NEWS = "news_notifications"
         const val GROUP_RESULTS = "pinak.sppunotify.RESULTS"
+        const val GROUP_PRIORITY = "pinak.sppunotify.PRIORITY"
         const val SUMMARY_ID = 0
+        const val PRIORITY_SUMMARY_ID = 1
         const val REVAL_NOTIFICATION_ID = 100
         const val EXAM_DATE_NOTIFICATION_ID = 101
         const val CIRCULAR_NOTIFICATION_ID = 103
