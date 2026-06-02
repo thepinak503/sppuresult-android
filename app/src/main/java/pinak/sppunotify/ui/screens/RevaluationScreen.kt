@@ -14,7 +14,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -34,13 +36,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import pinak.sppunotify.R
 import pinak.sppunotify.data.remote.RevalCourse
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.viewinterop.AndroidView
 import pinak.sppunotify.ui.components.AppEmptyState
 import pinak.sppunotify.ui.components.AppSearchBar
 import pinak.sppunotify.ui.components.AppTopBar
@@ -67,6 +73,9 @@ fun RevaluationScreen(
 
     var searchActive by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
+    var selectedCourseForSearch by remember { mutableStateOf<RevalCourse?>(null) }
+    var showSearchSheet by remember { mutableStateOf(false) }
+
     val revalUrl = "https://unipune.ac.in/university_files/Reval_Online_Results_online.htm"
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -157,7 +166,7 @@ fun RevaluationScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        departments.filter { it != "All" }.take(9).forEach { tag ->
+                        departments.asSequence().filter { it != "All" }.take(9).forEach { tag ->
                             SuggestionChip(
                                 onClick = {
                                     viewModel.onDepartmentSelected(tag)
@@ -346,7 +355,7 @@ fun RevaluationScreen(
                                         message = if (searchQuery.isNotEmpty()) "No matches for \"$searchQuery\""
                                                   else if (selectedDept != "All") "No courses in $selectedDept"
                                                   else "No revaluation courses",
-                                        subMessage = if (searchQuery.isNotEmpty() || selectedDept != "All")
+                                        subMessage = if (searchQuery.isNotEmpty() || (selectedDept != "All"))
                                                         "Try a different filter"
                                                      else "Pull down to refresh"
                                     )
@@ -372,8 +381,9 @@ fun RevaluationScreen(
                                             course = course,
                                             modifier = Modifier.animateItem(),
                                             onClick = {
-                                                val intent = Intent(Intent.ACTION_VIEW, revalUrl.toUri())
-                                                context.safeStartActivity(intent)
+                                                selectedCourseForSearch = course
+                                                viewModel.clearSearchResult()
+                                                showSearchSheet = true
                                             }
                                         )
                                     }
@@ -387,6 +397,166 @@ fun RevaluationScreen(
                         }
                     }
                 }
+
+                if (showSearchSheet && selectedCourseForSearch != null) {
+                    RevalSearchSheet(
+                        course = selectedCourseForSearch!!,
+                        onDismiss = { showSearchSheet = false },
+                        viewModel = viewModel
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RevalSearchSheet(
+    course: RevalCourse,
+    onDismiss: () -> Unit,
+    viewModel: RevaluationViewModel
+) {
+    val isSearching by viewModel.isSearchingResult.collectAsState()
+    val searchResultHtml by viewModel.searchResultHtml.collectAsState()
+    val isDark = isSystemInDarkTheme()
+
+    var searchBy by remember { mutableStateOf("Seat No") }
+    var searchValue by remember { mutableStateOf("") }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 48.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "Search Revaluation",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                text = course.course,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // Search By Toggle
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = searchBy == "Seat No",
+                    onClick = { searchBy = "Seat No" },
+                    label = { Text("Seat Number") },
+                    shape = RoundedCornerShape(12.dp)
+                )
+                FilterChip(
+                    selected = searchBy == "PRN No",
+                    onClick = { searchBy = "PRN No" },
+                    label = { Text("PRN Number") },
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = searchValue,
+                onValueChange = { searchValue = it },
+                label = { Text("Enter Value") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    if (searchValue.isNotBlank()) {
+                        viewModel.searchRevaluationResult(course.eventTarget, searchBy, searchValue)
+                    }
+                })
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = { viewModel.searchRevaluationResult(course.eventTarget, searchBy, searchValue) },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                enabled = !isSearching && searchValue.isNotBlank(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isSearching) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Search Result")
+                }
+            }
+
+            if (searchResultHtml != null) {
+                Spacer(Modifier.height(32.dp))
+                Text("Result:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(12.dp))
+
+                // HTML Viewer using WebView
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AndroidView(
+                        factory = { context ->
+                            android.webkit.WebView(context).apply {
+                                setBackgroundColor(0) // transparent
+                                settings.javaScriptEnabled = false
+                                webViewClient = android.webkit.WebViewClient()
+                            }
+                        },
+                        update = { webView ->
+                            val textColor = if (isDark) "#e2e8f0" else "#0f172a"
+                            val accentColor = "#2563eb"
+                            val borderColor = if (isDark) "#334155" else "#e2e8f0"
+                            val cardBg = if (isDark) "#1e293b" else "#ffffff"
+
+                            val styledHtml = """
+                                <html>
+                                <head>
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                <style>
+                                    body { font-family: -apple-system, sans-serif; font-size: 14px; color: $textColor; margin: 0; padding: 12px; line-height: 1.5; }
+                                    .reval-result { overflow-x: auto; }
+                                    .rv-student-info { background: $cardBg; border: 1px solid $borderColor; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-weight: 600; }
+                                    .rv-student-info span { font-weight: 400; color: #64748b; display: block; font-size: 11px; margin-bottom: 2px; }
+                                    table { width: 100%; border-collapse: collapse; background: $cardBg; border: 1px solid $borderColor; border-radius: 8px; overflow: hidden; }
+                                    th { background: $accentColor; color: white; padding: 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+                                    td { padding: 10px; border-bottom: 1px solid $borderColor; font-size: 13px; }
+                                    tr:last-child td { border-bottom: none; }
+                                </style>
+                                </head>
+                                <body><div class="reval-result">$searchResultHtml</div></body>
+                                </html>
+                            """.trimIndent()
+                            webView.loadDataWithBaseURL(null, styledHtml, "text/html", "UTF-8", null)
+                        },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 500.dp)
+                    )
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Disclaimer: This is a provisional result fetched from the university website. Verify with official marksheet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified
+                )
             }
         }
     }

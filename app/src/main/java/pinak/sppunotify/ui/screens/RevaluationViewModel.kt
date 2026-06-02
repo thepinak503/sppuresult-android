@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pinak.sppunotify.data.remote.RevalCourse
-import pinak.sppunotify.data.remote.ServerStatus
 import pinak.sppunotify.data.repository.RevalRepository
 import javax.inject.Inject
 
@@ -27,7 +26,7 @@ enum class RevalSort(val label: String) {
 
 @HiltViewModel
 class RevaluationViewModel @Inject constructor(
-    private val repository: RevalRepository
+    private val repository: RevalRepository,
 ) : ViewModel() {
 
     private val _courses = MutableStateFlow<List<RevalCourse>>(emptyList())
@@ -51,11 +50,17 @@ class RevaluationViewModel @Inject constructor(
     private val _totalCount = MutableStateFlow(0)
     val totalCount = _totalCount.asStateFlow()
 
+    private val _isSearchingResult = MutableStateFlow(false)
+    val isSearchingResult = _isSearchingResult.asStateFlow()
+
+    private val _searchResultHtml = MutableStateFlow<String?>(null)
+    val searchResultHtml = _searchResultHtml.asStateFlow()
+
     val serverStatus = repository.serverStatus
 
     /** Dynamically derived department list from course data */
     val departments: List<String> get() {
-        val codes = _courses.value.mapNotNull { extractDeptCode(it.course) }.distinct()
+        val codes = _courses.value.asSequence().mapNotNull { extractDeptCode(it.course) }.distinct().toList()
         return listOf("All") + codes.sorted()
     }
 
@@ -122,6 +127,29 @@ class RevaluationViewModel @Inject constructor(
         _sortOrder.value = order
     }
 
+    fun searchRevaluationResult(eventTarget: String, searchBy: String, searchValue: String) {
+        viewModelScope.launch {
+            _isSearchingResult.value = true
+            _searchResultHtml.value = null
+            try {
+                val result = repository.searchRevaluation(eventTarget, searchBy, searchValue)
+                if (result.isBlank()) {
+                    _uiEvent.send(UiEvent.ShowSnackbar("No result found"))
+                } else {
+                    _searchResultHtml.value = result
+                }
+            } catch (e: Exception) {
+                _uiEvent.send(UiEvent.ShowSnackbar("Search failed: ${e.message}"))
+            } finally {
+                _isSearchingResult.value = false
+            }
+        }
+    }
+
+    fun clearSearchResult() {
+        _searchResultHtml.value = null
+    }
+
     fun loadCourses() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -153,19 +181,15 @@ class RevaluationViewModel @Inject constructor(
 
             // Pattern 1: "BE_COMPUTER", "SE_CIVIL" — prefix before underscore
             val underscoreMatch = Regex("^([A-Za-z._/]+)[_\\s]").find(name)
-            if (underscoreMatch != null) {
-                return normalizeDeptCode(underscoreMatch.groupValues[1])
-            }
+            underscoreMatch?.let { return normalizeDeptCode(it.groupValues[1]) }
 
             // Pattern 2: "B.E. (COMPUTER)" — extract the degree code
             val parenMatch = Regex("^([A-Za-z._/]+)\\s*(?:\\(|\\d)").find(name)
-            if (parenMatch != null) {
-                return normalizeDeptCode(parenMatch.groupValues[1])
-            }
+            parenMatch?.let { return normalizeDeptCode(it.groupValues[1]) }
 
             // Pattern 3: Just take the first word (handles "MBA", "MCA", etc.)
             val firstWord = name.split(Regex("[\\s_]+")).firstOrNull()
-            if (firstWord != null && firstWord.length in 1..8) {
+            if (firstWord != null && (firstWord.length in 1..8)) {
                 return normalizeDeptCode(firstWord)
             }
 

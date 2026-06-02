@@ -30,7 +30,7 @@ class RevalRepository @Inject constructor(
             RevalCourse(
                 course = entity.course,
                 subject = entity.subject,
-                eventTarget = entity.eventTarget
+                eventTarget = entity.eventTarget,
             )
         }
     }
@@ -67,5 +67,13 @@ class RevalRepository @Inject constructor(
         dao.insertCourses(entities)
 
         newCourses
+    }
+
+    suspend fun searchRevaluation(
+        eventTarget: String,
+        searchBy: String,
+        searchValue: String,
+    ): String = withContext(Dispatchers.IO) {
+        scraper.searchRevaluation(eventTarget, searchBy, searchValue)
     }
 }

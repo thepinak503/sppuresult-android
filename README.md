@@ -22,6 +22,7 @@ This is an independent, community-developed application.
 - Filter results by department (FE, SE, TE, BE, MBA, MCA, B.Sc, B.Com, Law, and more)
 - Search functionality with fuzzy matching
 - View individual results using your seat number and mother's name (CAPTCHA verification required)
+- Integrated revaluation result search and viewing
 - Download result PDFs directly to your device
 - Pull-to-refresh to check for newly published results
 - Background notifications for new results

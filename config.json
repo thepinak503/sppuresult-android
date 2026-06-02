@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 3,
-  "latest_version_name": "1.2.0",
+  "latest_version_code": 4,
+  "latest_version_name": "1.3.0",
   "update_url": "https://github.com/thepinak503/sppuresult-android/releases/latest/download/app-release.apk",
   "latest_announcement": {
-    "id": "v1.2.0_update",
-    "title": "v1.2.0: The Power Update! ⭐",
-    "message": "Priority Watchlist, Backup/Restore, Sync Stats, and a gorgeous new Widget are here!",
+    "id": "v1.3.0_update",
+    "title": "v1.3.0: Reval Search! 🔍",
+    "message": "Search and view revaluation results directly inside the app! No more manual browsing.",
     "type": "FEATURE"
   }
 }

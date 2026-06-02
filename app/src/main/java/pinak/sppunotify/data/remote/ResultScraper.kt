@@ -37,11 +37,15 @@ class ResultScraper @Inject constructor() {
         
         private val trustAllContext: SSLContext by lazy {
             val sslContext = SSLContext.getInstance("TLS")
-            sslContext.init(null, arrayOf<TrustManager>(object : X509TrustManager {
-                override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-                override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-                override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-            }), SecureRandom())
+            sslContext.init(
+                null,
+                arrayOf<TrustManager>(object : X509TrustManager {
+                    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                }),
+                SecureRandom(),
+            )
             sslContext
         }
         
@@ -120,7 +124,7 @@ class ResultScraper @Inject constructor() {
                 val year = FOUR_DIGIT_YEAR_REGEX.find(clean)?.groupValues?.get(1)?.toIntOrNull() ?: currentYear
                 val month = MONTH_ABBREV_REGEX.find(clean)?.groupValues?.get(1)?.lowercase()?.let { MONTH_MAP[it] }
                 val day = TWO_TO_ONE_DIGIT_DAY_REGEX.findAll(clean)
-                    .mapNotNull { it.groupValues[1].toIntOrNull() }
+                    .mapNotNull { it.groupValues.getOrNull(1)?.toIntOrNull() }
                     .firstOrNull { it in 1..31 } ?: 1
                 
                 if (month != null) {
@@ -128,7 +132,7 @@ class ResultScraper @Inject constructor() {
                 } else {
                     0L
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 0L
             }
         }
@@ -212,8 +216,8 @@ class ResultScraper @Inject constructor() {
             val duration = System.currentTimeMillis() - startTime
             
             ServerStatus(isOnline = true, statusCode = responseCode, responseTimeMs = duration)
-        } catch (e: Exception) {
-            Log.w(TAG, "Ping failed for $url: ${e.message}")
+        } catch (_: Exception) {
+            // Log.w(TAG, "Ping failed for $url: ${e.message}")
             ServerStatus(isOnline = false, responseTimeMs = -1)
         } finally {
             connection?.disconnect()
@@ -256,8 +260,8 @@ class ResultScraper @Inject constructor() {
 
                 results.add(ResultDto(id, title, viewUrl, date, patternName, patternId))
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Scrape failed for session $period: ${e.message}")
+        } catch (_: Exception) {
+            // Log.e(TAG, "Scrape failed for session $period: ${e.message}")
         }
         results
     }
@@ -301,7 +305,25 @@ class ResultScraper @Inject constructor() {
     }
 
     data class CaptchaData(val imageBase64: String, val orgCaptchaText: String)
-    data class SubmitResult(val bytes: ByteArray, val mimeType: String)
+    data class SubmitResult(
+        val bytes: ByteArray,
+        val mimeType: String
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+            other as SubmitResult
+            if (!bytes.contentEquals(other.bytes)) return false
+            if (mimeType != other.mimeType) return false
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = bytes.contentHashCode()
+            result = 31 * result + mimeType.hashCode()
+            return result
+        }
+    }
 
     suspend fun fetchCaptcha(): CaptchaData? = withContext(Dispatchers.IO) {
         val ses = newSession()

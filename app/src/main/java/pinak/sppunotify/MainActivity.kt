@@ -2,7 +2,6 @@ package pinak.sppunotify
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -66,10 +65,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.lifecycleScope
 import pinak.sppunotify.ui.screens.OnboardingScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import pinak.sppunotify.data.local.PreferenceManager
 import pinak.sppunotify.ui.MainScreen
 import pinak.sppunotify.util.LocaleHelper
@@ -85,10 +86,8 @@ class MainActivity : AppCompatActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (!granted) {
-            // We can handle the denial state in the UI
-        }
+    ) { _ ->
+        // We can handle the denial state in the UI
     }
 
     private val refreshRateHandler = Handler(Looper.getMainLooper())
@@ -111,16 +110,34 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // Configuration state to handle initialization
+        var isReady by mutableStateOf(false)
+        splashScreen.setKeepOnScreenCondition { !isReady }
         
-        // Apply locale for proper resource loading (Injected preferenceManager is available now)
-        runBlocking {
-            val prefs = preferenceManager.preferencesFlow.first()
-            LocaleHelper.setLocale(this@MainActivity, prefs.appLanguage)
+        lifecycleScope.launch {
+            try {
+                val prefs = preferenceManager.preferencesFlow.first()
+                LocaleHelper.setLocale(this@MainActivity, prefs.appLanguage)
+                
+                val mode = try { ThemeMode.valueOf(prefs.themeMode) } catch (_: Exception) { ThemeMode.SYSTEM }
+                when(mode) {
+                    ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                    ThemeMode.DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                    ThemeMode.SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                    ThemeMode.BLACK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                }
+                
+                isReady = true
+            } catch (e: Exception) {
+                Log.e(TAG, "Startup config failed", e)
+                isReady = true // Continue anyway
+            }
         }
         
         splashScreen.setOnExitAnimationListener { splashProvider ->
-            val zoomX = android.view.animation.AnimationUtils.loadAnimation(this, android.R.anim.fade_out)
-            splashProvider.view.startAnimation(zoomX)
+            val fadeOut = android.view.animation.AnimationUtils.loadAnimation(this, android.R.anim.fade_out)
+            splashProvider.view.startAnimation(fadeOut)
             Handler(Looper.getMainLooper()).postDelayed({
                 splashProvider.remove()
             }, 300)
@@ -134,50 +151,46 @@ class MainActivity : AppCompatActivity() {
             Log.w(TAG, "Failed to set isFrameRatePowerSavingsBalanced: ${e.message}")
         }
 
-        val config = runBlocking {
-            val prefs = preferenceManager.preferencesFlow.first()
-            
-            // Sync delegates once on startup
-            LocaleHelper.setLocale(this@MainActivity, prefs.appLanguage)
-            val mode = try { ThemeMode.valueOf(prefs.themeMode) } catch (_: Exception) { ThemeMode.SYSTEM }
-            when(mode) {
-                ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                ThemeMode.DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                ThemeMode.SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                ThemeMode.BLACK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            }
-            prefs
-        }
-
-        val themeMode = try {
-            ThemeMode.valueOf(config.themeMode)
-        } catch (_: Exception) {
-            ThemeMode.SYSTEM
-        }
-
         setContent {
+            val prefs by preferenceManager.preferencesFlow.collectAsState(initial = null)
+            val themeMode = remember(prefs) {
+                try {
+                    ThemeMode.valueOf(prefs?.themeMode ?: "SYSTEM")
+                } catch (_: Exception) {
+                    ThemeMode.SYSTEM
+                }
+            }
+            
             SPPUResultWatchTheme(themeMode = themeMode) {
-                AppSetupFlow()
+                AppSetupFlow(prefs)
             }
         }
     }
 
     @Composable
-    private fun AppSetupFlow() {
+    private fun AppSetupFlow(prefs: pinak.sppunotify.data.local.UserPreferences?) {
         val context = LocalContext.current
-        val prefs by preferenceManager.preferencesFlow.collectAsState(initial = null)
+        val scope = rememberCoroutineScope()
         
         var isOnline by remember { mutableStateOf(isOnline()) }
         var disclaimerAccepted by remember {
-            mutableStateOf(context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE).getBoolean("disclaimer_accepted", false))
+            mutableStateOf(context.getSharedPreferences("app_settings", Context.MODE_PRIVATE).getBoolean("disclaimer_accepted", false))
         }
         var showPermissionDialog by remember { mutableStateOf(false) }
 
-        if (prefs == null) return // Wait for initial prefs
+        if (prefs == null) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator()
+            }
+            return
+        }
 
-        if (!prefs!!.onboardingCompleted) {
+        if (!prefs.onboardingCompleted) {
             OnboardingScreen(onFinished = {
-                runBlocking { preferenceManager.updateOnboardingCompleted(true) }
+                scope.launch { preferenceManager.updateOnboardingCompleted(true) }
             })
             return
         }
@@ -474,8 +487,8 @@ class MainActivity : AppCompatActivity() {
             lastAppliedRefreshRate = targetRefreshRate
             Log.d(TAG, "Set refresh rate: ${targetRefreshRate.toInt()}Hz, modeId=$targetModeId")
 
-        } catch (e: Exception) {
-            Log.w(TAG, "setHighRefreshRate inner exception: ${e.message}")
+        } catch (_: Exception) {
+            // Log.w(TAG, "setHighRefreshRate inner exception: ${e.message}")
         }
     }
 

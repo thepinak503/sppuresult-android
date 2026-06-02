@@ -86,7 +86,7 @@ class RevaluationScraper @Inject constructor() {
         return BufferedReader(InputStreamReader(conn.inputStream)).readText()
     }
 
-    suspend fun scrapeCourses(): List<RevalCourse> = withContext(Dispatchers.IO) {
+    suspend fun scrapeCourses(stopPredicate: ((RevalCourse) -> Boolean)? = null): List<RevalCourse> = withContext(Dispatchers.IO) {
         val allCourses = mutableListOf<RevalCourse>()
         val cookies = mutableMapOf<String, String>()
 
@@ -97,8 +97,10 @@ class RevaluationScraper @Inject constructor() {
 
             val seenKeys = mutableSetOf<String>()
             var currentPage = 1
+            var shouldStop = false
 
             while (currentPage <= 100) {
+                if (shouldStop) break
                 val rows = doc.select("table#grdColleges tr")
 
                 for ((i, row) in rows.withIndex()) {
@@ -124,10 +126,17 @@ class RevaluationScraper @Inject constructor() {
                     if (eventTarget.isNotEmpty()) {
                         val key = "$course|$subject|$eventTarget"
                         if (seenKeys.add(key)) {
-                            allCourses.add(RevalCourse(course, subject, eventTarget))
+                            val revalCourse = RevalCourse(course, subject, eventTarget)
+                            if (stopPredicate?.invoke(revalCourse) == true) {
+                                shouldStop = true
+                                break
+                            }
+                            allCourses.add(revalCourse)
                         }
                     }
                 }
+
+                if (shouldStop) break
 
                 // Numeric pagination: find the lowest page number > currentPage
                 val pagerLinks = doc.select("tr.GridViewPagerStyle a")
@@ -170,6 +179,139 @@ class RevaluationScraper @Inject constructor() {
             Log.e(TAG, "scrapeCourses failed: ${e.message}", e)
         }
         allCourses
+    }
+
+    /**
+     * Searches for a specific revaluation result by seat number or PRN
+     */
+    suspend fun searchRevaluation(
+        eventTarget: String,
+        searchBy: String, // "Seat No" or "PRN No"
+        searchValue: String
+    ): String = withContext(Dispatchers.IO) {
+        val cookies = mutableMapOf<String, String>()
+        try {
+            // 1. Initial GET to get cookies and hidden fields
+            var html = fetch(REVAL_URL, cookies)
+            if (html.isEmpty()) return@withContext ""
+            var doc = Jsoup.parse(html)
+
+            // 2. Select the course (trigger __doPostBack for the course)
+            var formData = mutableMapOf<String, String>()
+            formData["__EVENTTARGET"] = eventTarget
+            formData["__EVENTARGUMENT"] = ""
+            for (inp in doc.select("input[type=hidden]")) {
+                formData[inp.attr("name")] = inp.attr("value")
+            }
+
+            html = fetch(REVAL_URL, cookies, formData)
+            if (html.isEmpty()) return@withContext ""
+            doc = Jsoup.parse(html)
+
+            // 3. Fill search type and value
+            // Extract the action URL if it's different
+            val form = doc.select("form").first()
+            val action = form?.attr("action") ?: ""
+            val targetUrl = if (action.isEmpty() || action == "." || action == "./") {
+                REVAL_URL
+            } else if (action.startsWith("http")) {
+                action
+            } else if (action.startsWith("/")) {
+                "https://pun.unipune.ac.in$action"
+            } else {
+                "https://pun.unipune.ac.in/revalresult/$action"
+            }
+
+            val examVal = doc.select("#cboExamName option[selected]").attr("value").ifEmpty {
+                doc.select("#cboExamName option").first()?.attr("value") ?: ""
+            }
+
+            formData = mutableMapOf()
+            formData["__EVENTTARGET"] = ""
+            formData["__EVENTARGUMENT"] = ""
+            formData["cboExamName"] = examVal
+            formData["cboSearchBy"] = searchBy
+            formData["txtSearch"] = searchValue
+            formData["btnShow"] = "Submit"
+
+            for (inp in doc.select("input[type=hidden]")) {
+                formData[inp.attr("name")] = inp.attr("value")
+            }
+
+            html = fetch(targetUrl, cookies, formData)
+            if (html.isEmpty()) return@withContext ""
+            doc = Jsoup.parse(html)
+
+            // 4. Check if we got a list with a "Result" link (common for some courses)
+            val resultLink = doc.select("a[href*='__doPostBack']").find { it.text().contains("Result", ignoreCase = true) }
+            if (resultLink != null) {
+                val href = resultLink.attr("href")
+                val linkTarget = extractEventTarget(href)
+                
+                val nextFormData = mutableMapOf<String, String>()
+                nextFormData["__EVENTTARGET"] = linkTarget
+                nextFormData["__EVENTARGUMENT"] = ""
+                for (inp in doc.select("input[type=hidden]")) {
+                    nextFormData[inp.attr("name")] = inp.attr("value")
+                }
+                
+                html = fetch(targetUrl, cookies, nextFormData)
+                if (html.isEmpty()) return@withContext ""
+                doc = Jsoup.parse(html)
+            }
+
+            // 5. Extract and clean the result
+            return@withContext extractAndCleanResult(doc.html())
+        } catch (e: Exception) {
+            Log.e(TAG, "searchRevaluation failed: ${e.message}")
+            ""
+        }
+    }
+
+    private fun extractAndCleanResult(html: String): String {
+        val doc = Jsoup.parse(html)
+        
+        // Remove scripts, styles, etc.
+        doc.select("script, style, link, input[type=hidden], img").remove()
+        
+        // Find tables that look like results
+        val tables = doc.select("table")
+        var bestTable: org.jsoup.nodes.Element? = null
+        
+        for (table in tables) {
+            val text = table.text()
+            if (text.contains("SubCode", ignoreCase = true) || text.contains("SubName", ignoreCase = true) || 
+                text.contains("Obt", ignoreCase = true) || text.contains("Marks", ignoreCase = true)) {
+                if (bestTable == null || table.text().length > bestTable.text().length) {
+                    bestTable = table
+                }
+
+            }
+        }
+        
+        if (bestTable != null) {
+            val studentInfo = StringBuilder()
+            val fullText = doc.text()
+            
+            val seatMatch = Regex("Seat\\s*No\\s*:\\s*(\\S+)", RegexOption.IGNORE_CASE).find(fullText)
+            seatMatch?.let { studentInfo.append("Seat No: ${it.groupValues[1]}<br>") }
+            
+            val nameMatch = Regex("Name\\s*:\\s*([A-Z][a-zA-Z\\s]+)").find(fullText)
+            nameMatch?.let { studentInfo.append("Name: ${it.groupValues[1].trim()}<br>") }
+            
+            val prnMatch = Regex("PRN\\s*:\\s*(\\S+)", RegexOption.IGNORE_CASE).find(fullText)
+            prnMatch?.let { studentInfo.append("PRN: ${it.groupValues[1]}") }
+            
+            return """
+                <div class="rv-student-info">
+                    ${if (studentInfo.isNotEmpty()) studentInfo.toString() else ""}
+                </div>
+                ${bestTable.outerHtml()}
+            """.trimIndent()
+        }
+        
+        // Fallback: just return the body content without scripts/styles
+        return doc.body().html()
     }
 
 
