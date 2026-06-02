@@ -156,7 +156,6 @@ fun ExamDatesScreen(
                                 items(examDates, key = { it.courseName }) { item ->
                                     ExamDateCard(
                                         item = item,
-                                        modifier = Modifier.animateItem()
                                     )
                                 }
                             }

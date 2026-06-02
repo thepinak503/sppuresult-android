@@ -379,7 +379,6 @@ fun RevaluationScreen(
                                     ) { _, course ->
                                         RevalCourseCard(
                                             course = course,
-                                            modifier = Modifier.animateItem(),
                                             onClick = {
                                                 selectedCourseForSearch = course
                                                 viewModel.clearSearchResult()

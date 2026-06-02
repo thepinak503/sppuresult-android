@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 4,
-  "latest_version_name": "1.3.0",
+  "latest_version_code": 5,
+  "latest_version_name": "1.3.1",
   "update_url": "https://github.com/thepinak503/sppuresult-android/releases/latest/download/app-release.apk",
   "latest_announcement": {
-    "id": "v1.3.0_update",
-    "title": "v1.3.0: Reval Search! 🔍",
-    "message": "Search and view revaluation results directly inside the app! No more manual browsing.",
+    "id": "v1.3.1_update",
+    "title": "v1.3.1: Scrolling Optimized! ⚡",
+    "message": "We've improved list scrolling performance and fixed the scrollbar behavior for a smoother experience.",
     "type": "FEATURE"
   }
 }

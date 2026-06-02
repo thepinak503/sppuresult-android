@@ -505,7 +505,6 @@ fun HomeScreen(
                                     ResultCard(
                                         result = result,
                                         searchQuery = searchQuery,
-                                        modifier = Modifier.animateItem(),
                                         sharedTransitionScope = sharedTransitionScope,
                                         animatedVisibilityScope = animatedVisibilityScope,
                                         onToggleBookmark = { viewModel.toggleBookmark(result.id) },
