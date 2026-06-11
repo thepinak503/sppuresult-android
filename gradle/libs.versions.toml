@@ -6,8 +6,8 @@ ksp = "2.3.9"
 
 # Android SDK
 compileSdk = "37"
-targetSdk = "36"
-minSdk = "24"
+targetSdk = "37"
+minSdk = "23"
 
 # AndroidX
 coreKtx = "1.18.0"

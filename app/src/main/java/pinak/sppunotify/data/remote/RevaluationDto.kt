@@ -1,5 +1,8 @@
 package pinak.sppunotify.data.remote
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class RevalCourse(
     val course: String,
     val subject: String,

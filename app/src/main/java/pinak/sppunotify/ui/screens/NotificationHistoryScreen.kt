@@ -105,7 +105,10 @@ fun NotificationHistoryScreen(
                         key = { it.id },
                         contentType = { entry -> entry.type },
                     ) { entry ->
-                        NotificationHistoryCard(entry = entry)
+                        NotificationHistoryCard(
+                            entry = entry,
+                            modifier = Modifier.animateItem(),
+                        )
                     }
                 }
             }
@@ -114,7 +117,10 @@ fun NotificationHistoryScreen(
 }
 
 @Composable
-private fun NotificationHistoryCard(entry: NotificationHistoryEntry) {
+private fun NotificationHistoryCard(
+    entry: NotificationHistoryEntry,
+    modifier: Modifier = Modifier,
+) {
     val dateStr = remember(entry.timestamp) {
         val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
         sdf.format(Date(entry.timestamp))
@@ -139,7 +145,7 @@ private fun NotificationHistoryCard(entry: NotificationHistoryEntry) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(14.dp),

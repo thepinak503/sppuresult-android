@@ -195,6 +195,7 @@ fun CircularsScreen(
                                 ) { item ->
                                     CircularCard(
                                         item = item,
+                                        modifier = Modifier.animateItem(),
                                     ) {
                                         val intent = Intent(Intent.ACTION_VIEW, item.link.toUri())
                                         context.safeStartActivity(

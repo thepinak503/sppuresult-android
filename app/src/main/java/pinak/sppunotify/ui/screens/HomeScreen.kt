@@ -369,30 +369,14 @@ fun HomeScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            itemsIndexed(
-                                items = results.take(15),
-                                key = { _, res -> res.id },
-                                contentType = { _, _ -> "search-result" },
-                            ) { index, res ->
-                                AnimatedVisibility(
-                                    visible = true,
-                                    enter = slideInVertically(
-                                        initialOffsetY = { it },
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioLowBouncy,
-                                            stiffness = Spring.StiffnessLow
-                                        )
-                                    ) + fadeIn(
-                                        animationSpec = tween(
-                                            durationMillis = 300,
-                                            delayMillis = index * 50
-                                        )
-                                    ),
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                ) {
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                                modifier = Modifier.fillMaxSize(),
+                            ) {
+                                itemsIndexed(
+                                    items = results.take(15),
+                                    key = { _, res -> res.id },
+                                    contentType = { _, _ -> "search-result" },
+                                ) { _, res ->
                                     ListItem(
                                         headlineContent = {
                                             Text(
@@ -404,6 +388,7 @@ fun HomeScreen(
                                         supportingContent = { Text(res.publishedDate) },
                                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                         modifier = Modifier
+                                            .animateItem()
                                             .clip(RoundedCornerShape(12.dp))
                                             .clickable {
                                                 searchActive = false
@@ -412,7 +397,6 @@ fun HomeScreen(
                                     )
                                 }
                             }
-                        }
                     }
                 }
             }
@@ -508,6 +492,7 @@ fun HomeScreen(
                                     contentType = { _, _ -> "result-card" },
                                 ) { _, result ->
                                     ResultCard(
+                                        modifier = Modifier.animateItem(),
                                         result = result,
                                         searchQuery = searchQuery,
                                         sharedTransitionScope = sharedTransitionScope,

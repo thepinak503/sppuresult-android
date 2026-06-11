@@ -16,7 +16,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -119,13 +118,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Configuration state to handle initialization
-        var isReady by mutableStateOf(false)
-        splashScreen.setKeepOnScreenCondition { !isReady }
-        
         lifecycleScope.launch {
             try {
                 val prefs = preferenceManager.preferencesFlow.first()
@@ -138,20 +132,9 @@ class MainActivity : AppCompatActivity() {
                     ThemeMode.SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
                     ThemeMode.BLACK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                 }
-                
-                isReady = true
             } catch (e: Exception) {
                 Log.e(TAG, "Startup config failed", e)
-                isReady = true // Continue anyway
             }
-        }
-        
-        splashScreen.setOnExitAnimationListener { splashProvider ->
-            val fadeOut = android.view.animation.AnimationUtils.loadAnimation(this, android.R.anim.fade_out)
-            splashProvider.view.startAnimation(fadeOut)
-            Handler(Looper.getMainLooper()).postDelayed({
-                splashProvider.remove()
-            }, 300)
         }
 
         enableEdgeToEdge()

@@ -15,9 +15,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 @Composable
 fun LazyScrollbar(
@@ -25,15 +24,8 @@ fun LazyScrollbar(
     modifier: Modifier = Modifier,
 ) {
     var isDragging by remember { mutableStateOf(false) }
-    
-    // Channel for throttling scroll updates
-    val scrollChannel = remember { Channel<Int>(Channel.CONFLATED) }
-    
-    LaunchedEffect(Unit) {
-        scrollChannel.receiveAsFlow().collectLatest { targetIdx ->
-            listState.scrollToItem(targetIdx)
-        }
-    }
+    val scope = rememberCoroutineScope()
+    var scrollJob by remember { mutableStateOf<Job?>(null) }
 
     // Hide if nothing to scroll — read layoutInfo lazily inside derivedStateOf
     val scrollInfo by remember {
@@ -45,7 +37,6 @@ fun LazyScrollbar(
                 null
             } else {
                 val viewportHeight = info.viewportEndOffset - info.viewportStartOffset
-                // Use a more stable calculation for progress
                 val firstItem = visibleItems.firstOrNull()
                 val lastItem = visibleItems.lastOrNull()
                 
@@ -63,7 +54,6 @@ fun LazyScrollbar(
     }
 
     val info = scrollInfo ?: return
-    val stateProgress = info.progress
     val totalItems = info.totalItems
     val visibleItemCount = info.visibleItemCount
 
@@ -79,12 +69,13 @@ fun LazyScrollbar(
 
     Canvas(
         modifier = modifier
-            .width(20.dp) // Narrower touch area
+            .width(20.dp)
             .fillMaxHeight()
             .pointerInput(listState) {
                 detectVerticalDragGestures(
                     onDragStart = { 
                         isDragging = true
+                        scrollJob?.cancel()
                     },
                     onDragEnd = { isDragging = false },
                     onDragCancel = { isDragging = false },
@@ -94,15 +85,27 @@ fun LazyScrollbar(
                         val currentTotal = currentLayoutInfo.totalItemsCount
                         if (currentTotal > 0) {
                             val trackHeight = size.height.toFloat()
-                            val visibleCount = currentLayoutInfo.visibleItemsInfo.size
-                            val thumbH = (trackHeight * (visibleCount.toFloat() / currentTotal.toFloat())).coerceAtLeast(60f)
+                            val currentProgress = if (currentTotal > visibleItemCount) {
+                                val first = currentLayoutInfo.visibleItemsInfo.firstOrNull() ?: return@detectVerticalDragGestures
+                                (listState.firstVisibleItemIndex + listState.firstVisibleItemScrollOffset.toFloat() / first.size.toFloat()) / (currentTotal - visibleItemCount).toFloat()
+                            } else 0f
+                            
+                            val thumbH = (trackHeight * (visibleItemCount.toFloat() / currentTotal.toFloat())).coerceAtLeast(60f)
                             val scrollable = trackHeight - thumbH
                             
                             if (scrollable > 0) {
                                 val deltaP = dragAmount / scrollable
-                                val newP = (stateProgress + deltaP).coerceIn(0f, 1f)
-                                val targetIdx = (newP * (currentTotal - 1)).toInt()
-                                scrollChannel.trySend(targetIdx)
+                                val newP = (currentProgress + deltaP).coerceIn(0f, 1f)
+                                val targetIdx = (newP * (currentTotal - 1)).toInt().coerceIn(0, currentTotal - 1)
+                                
+                                // Cancel previous scroll and start new one with smooth animation
+                                scrollJob?.cancel()
+                                scrollJob = scope.launch {
+                                    listState.animateScrollToItem(
+                                        targetIdx,
+                                        scrollOffset = 0
+                                    )
+                                }
                             }
                         }
                     }
@@ -111,7 +114,7 @@ fun LazyScrollbar(
     ) {
         val trackHeight = size.height
         val thumbHeight = (trackHeight * (visibleItemCount.toFloat() / totalItems.toFloat())).coerceAtLeast(80f)
-        val thumbOffset = stateProgress * (trackHeight - thumbHeight)
+        val thumbOffset = info.progress * (trackHeight - thumbHeight)
 
         // Draw track - subtler
         drawRoundRect(

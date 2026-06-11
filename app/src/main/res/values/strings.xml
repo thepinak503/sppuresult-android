@@ -166,4 +166,8 @@
     <string name="watchlist_desc">Additional keyword-based matching. Results matching these keywords will also trigger notifications.</string>
     <string name="suggested_keywords">Suggested Keywords</string>
     <string name="suggested_keywords_desc">Tap a suggestion to add it to your watchlist</string>
+    <string name="priority_watchlist_title">⭐ Priority Watchlist</string>
+    <string name="priority_watchlist_desc">Get High Importance notifications (custom sound &amp; vibration) for results matching these keywords.</string>
+    <string name="suggested_priority_keywords">⭐ Suggested Priority Keywords</string>
+    <string name="suggested_priority_desc">Tap to add high-importance keywords for priority notifications</string>
 </resources>

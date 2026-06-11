@@ -110,7 +110,10 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
                         )
                     }
                     items(categoryLinks, key = { it.url }) { link ->
-                        LinkCard(link = link) {
+                        LinkCard(
+                            link = link,
+                            modifier = Modifier.animateItem(),
+                        ) {
                             val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
                             context.safeStartActivity(intent)
                         }
@@ -127,9 +130,13 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
 }
 
 @Composable
-fun LinkCard(link: SppuLink, onClick: () -> Unit) {
+fun LinkCard(
+    link: SppuLink,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),

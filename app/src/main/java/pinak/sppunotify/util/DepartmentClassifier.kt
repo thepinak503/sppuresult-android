@@ -12,34 +12,170 @@ object DepartmentClassifier {
         "Law", "Diploma",
     )
 
-    /** Suggested keywords for the watchlist — covers specializations and program names */
+    /**
+     * Comprehensive suggested keywords for the watchlist — extracted from actual SPPU result portal data.
+     * Organized by category for clarity. Every keyword here appears in real SPPU result titles.
+     */
     val suggestedKeywords = listOf(
-        // Engineering branches
-        "Computer", "Mechanical", "Civil", "Electrical", "E&TC", "IT",
-        "Electronics", "Instrumentation", "Automation", "Robotics",
-        // Science fields
+        // ═══ YEAR LEVELS ═══
+        "First Year", "Second Year", "Third Year", "Fourth Year", "Final Year",
+        "F.E.", "S.E.", "T.E.", "B.E.", "M.E.",
+        "FE", "SE", "TE", "BE", "ME",
+        // ═══ ENGINEERING SPECIALIZATIONS ═══
+        "Computer Engineering", "Mechanical", "Civil", "Electrical", "E&TC",
+        "Information Technology", "Electronics", "Instrumentation",
+        "Artificial Intelligence", "Machine Learning", "Data Science", "Robotics",
+        "Automation", "Cyber Security", "AI and ML",
+        // ═══ MBA PROGRAMS ═══
+        "MBA", "Master of Business Administration",
+        "MBA (Digital Marketing)", "MBA (Fintech)", "MBA (Project Management)",
+        "MBA (Service Management)", "MBA (Information Technology)",
+        "MBA (Human Resource Development)", "MBA (HRD)",
+        // ═══ MCA PROGRAMS ═══
+        "MCA", "Master of Computer Application", "MCA Integrated", "MCA (Engineering)",
+        // ═══ BBA / BCA PROGRAMS ═══
+        "BBA", "Bachelor of Business Administration",
+        "BBA(CA)", "BBA (Computer Application)",
+        "BBA(IB)", "BBA (International Business)",
+        "BCA", "Bachelor of Computer Applications",
+        "BCA (Science)", "BCA (Commerce and Management)",
+        // ═══ B.Com PROGRAMS ═══
+        "B.Com", "Bachelor of Commerce",
+        "B.Com (Business Management)", "B.Com (Computer Application)",
+        "B.Com (International Business)", "B.Com (CBCS)",
+        // ═══ B.Sc PROGRAMS ═══
+        "B.Sc", "Bachelor of Science",
+        "B.Sc (Computer Science)", "B.Sc (Computer Application)",
+        "B.Sc (Biotechnology)", "B.Sc (Cyber and Digital Science)",
+        "B.Sc (Hospitality Studies)", "B.Sc (Animation)",
+        "B.Sc (Data Science)", "B.Sc (Information Technology)",
+        "B.Sc (Home Science)", "B.Sc (Fashion Design)",
+        "B.Sc (Artificial Intelligence and Machine Learning)",
+        "B.Sc (Wine Brewing and Alcohol Technology)",
+        // ═══ M.Sc PROGRAMS ═══
+        "M.Sc", "Master of Science",
+        "M.Sc (Computer Science)", "M.Sc (Computer Applications)",
+        "M.Sc (Mathematics)", "M.Sc (Physics)", "M.Sc (Chemistry)",
+        "M.Sc (Organic Chemistry)", "M.Sc (Inorganic Chemistry)",
+        "M.Sc (Physical Chemistry)", "M.Sc (Analytical Chemistry)",
+        "M.Sc (Botany)", "M.Sc (Zoology)", "M.Sc (Microbiology)",
+        "M.Sc (Biotechnology)", "M.Sc (Electronics)",
+        "M.Sc (Environmental Science)", "M.Sc (Geography)",
+        "M.Sc (Statistics)", "M.Sc (Drug Chemistry)",
+        "M.Sc (Bio-Chemistry)", "M.Sc (IMCA)",
+        // ═══ MA / M.Com PROGRAMS ═══
+        "MA", "M.A.", "Master of Arts",
+        "M.Com", "Master of Commerce",
+        "MA (Journalism and Mass Communication)",
+        "MA/M.Sc Geography", "MA/M.Sc Statistics",
+        // ═══ BA / B.A. PROGRAMS ═══
+        "B.A.", "Bachelor of Arts",
+        // ═══ LAW PROGRAMS ═══
+        "LLB", "LL.B", "LLM", "LL.M",
+        "B.A.LL.B", "BA LLB",
+        "Diploma in Taxation Law", "Diploma in Intellectual Property Rights",
+        "Diploma in Cyber Laws", "Diploma in Labour Laws",
+        "Course in Forensic and Medical Jurisprudence",
+        // ═══ PHARMACY ═══
+        "B.Pharm", "Bachelor of Pharmacy",
+        "M.Pharm", "Master of Pharmacy",
+        "Pharm.D", "Doctor of Pharmacy",
+        // ═══ ARCHITECTURE ═══
+        "B.Arch", "Bachelor of Architecture",
+        "M.Arch", "Master of Architecture",
+        "M.Arch (Architectural Conservation)",
+        "M.Arch (Construction Management)",
+        "M.Arch (Digital Architecture)",
+        "M.Arch (Design and Project Management)",
+        "M.Arch (Environmental Architecture)",
+        "M.Arch (Landscape Architecture)",
+        "M.Arch (Urban Design)",
+        // ═══ EDUCATION ═══
+        "B.Ed", "Bachelor of Education",
+        "M.Ed", "Master of Education",
+        "B.P.Ed", "Bachelor of Physical Education",
+        "M.P.Ed", "Master of Physical Education",
+        "B.Ed Special Education",
+        // ═══ HOTEL MANAGEMENT ═══
+        "BHMCT", "Bachelor of Hotel Management",
+        "MHMCT", "Masters in Hotel Management",
+        "Hotel Management and Catering Technology",
+        // ═══ LIBRARY SCIENCE ═══
+        "Library and Information Science", "Library Science",
+        "Bachelor of Library", "Master of Library",
+        // ═══ DESIGN & OTHER UG ═══
+        "Bachelor of Design", "B.Des",
+        "B.Voc", "Vocational",
+        // ═══ DIPLOMAS ═══
+        "PG Diploma", "Post Graduate Diploma",
+        "PGDCM", "Diploma in Banking",
+        "Diploma in Hospital Management",
+        "Diploma in International Business",
+        // ═══ EXAM PATTERNS ═══
+        "2015 Pattern", "2017 Pattern", "2018 Pattern",
+        "2019 Pattern", "2020 Pattern", "2021 Pattern",
+        "2023 Pattern", "2024 Pattern", "2025 Pattern",
+        "Credit Pattern", "CBCS", "NEP 2020",
+        "REV.2015", "REV.2016", "REV.2017", "REV.2019", "REV.2020",
+        // ═══ SESSIONS ═══
+        "Summer Session", "Winter Session",
+        // ═══ SPECIAL DESIGNATIONS ═══
+        "Backlog", "Fresh", "External", "Program 125",
+        // Science common
         "Physics", "Chemistry", "Mathematics", "Biology", "Zoology",
         "Botany", "Biotechnology", "Microbiology", "Statistics",
         "Geography", "Geology", "Environmental Science",
-        // Management & Commerce
-        "Business Administration", "Finance", "Marketing", "HR",
+        "Biochemistry", "Drug Chemistry", "Analytical Chemistry",
+        "Organic Chemistry", "Inorganic Chemistry", "Physical Chemistry",
+        // Management
+        "Finance", "Marketing", "Human Resource", "International Business",
+        "Digital Marketing", "Project Management", "Service Management",
         // Arts & Humanities
         "Economics", "History", "Political Science", "Psychology",
         "Sociology", "Philosophy", "English", "Marathi", "Hindi",
-        "Sanskrit", "Foreign Language",
-        // Pharmacy
-        "Pharmaceutics", "Pharmacology", "Pharm",
-        // Law
-        "Law", "Legal", "Corporate Law",
-        // Exam pattern years
-        "2019 Pattern", "2024 Pattern", "CBCS",
-        // Education
-        "Education", "Teaching",
-        // Architecture & Design
-        "Architecture", "Design", "Planning",
-        // Other common
-        "Hotel Management", "Tourism", "Vocational",
+        "Sanskrit", "Journalism", "Mass Communication",
+        // Other
         "Engineering", "Technology", "Semester", "Annual",
+        "Hospitality", "Tourism", "Animation", "Fashion",
+        "Home Science", "Wine", "Brewing",
+    )
+
+    /**
+     * Priority-focused keywords — the most impactful ones users would want
+     * high-importance notifications for. A subset of suggestedKeywords for the
+     * Priority Watchlist suggestions UI.
+     */
+    val suggestedPriorityKeywords = listOf(
+        // Year levels (most common use case)
+        "BE", "B.E.", "TE", "T.E.", "SE", "S.E.", "FE", "F.E.",
+        "Final Year", "Fourth Year",
+        // High-demand programs
+        "Computer", "IT", "Information Technology",
+        "Artificial Intelligence", "Machine Learning", "Data Science",
+        "Cyber Security", "AI and ML",
+        "Mechanical", "Civil", "Electrical", "E&TC", "Electronics",
+        // Popular PG programs
+        "MBA", "Master of Business Administration",
+        "MCA", "Master of Computer Application",
+        "M.Sc (Computer Science)", "M.Sc (Computer Applications)",
+        // Popular UG programs
+        "BBA", "BCA", "B.Com", "B.Sc (Computer Science)",
+        // Law
+        "LLB", "LL.B", "LLM", "B.A.LL.B",
+        // Pharmacy
+        "B.Pharm", "M.Pharm", "Pharm.D",
+        // Architecture
+        "B.Arch", "M.Arch",
+        // Education
+        "B.Ed", "M.Ed",
+        // Hotel Management
+        "BHMCT", "Hotel Management",
+        // Exam patterns
+        "2019 Pattern", "2024 Pattern", "2025 Pattern", "NEP 2020",
+        // Session
+        "Summer Session", "Winter Session",
+        // Special
+        "Backlog",
     )
 
     fun classify(title: String): String {
@@ -51,6 +187,7 @@ object DepartmentClassifier {
             SE_REGEX.containsMatchIn(title) -> "SE"
             TE_REGEX.containsMatchIn(title) -> "TE"
             BE_REGEX.containsMatchIn(title) -> "BE"
+            ME_REGEX.containsMatchIn(title) || ME_LONG_REGEX.containsMatchIn(title) -> "ME"
             MBA_REGEX.containsMatchIn(n) || nu.contains("MBA") || MBA_LONG_REGEX.containsMatchIn(nu) -> "MBA"
             MCA_REGEX.containsMatchIn(n) || MCA_LONG_REGEX.containsMatchIn(nu) -> "MCA"
             MSC_REGEX.containsMatchIn(n) -> "M.Sc"
@@ -91,11 +228,13 @@ object DepartmentClassifier {
     private val YEAR_PREFIX_REGEX = Regex("^(FIRST|SECOND|THIRD|FOURTH|FINAL)\\s+YEAR\\s+", RegexOption.IGNORE_CASE)
     private val FY_REGEX = Regex("^FirstYear\\s+", RegexOption.IGNORE_CASE)
     
-    private val FE_REGEX = Regex("^F\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE)
+    private val FE_REGEX = Regex("^F\\.?\\s*E\\.?\\s*(\\(|\\d|\\s)", RegexOption.IGNORE_CASE)
     private val FE_LONG_REGEX = Regex("^FIRST\\s+YEAR\\s+ENGINEERING", RegexOption.IGNORE_CASE)
-    private val SE_REGEX = Regex("^S\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE)
-    private val TE_REGEX = Regex("^T\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE)
-    private val BE_REGEX = Regex("^B\\.?\\s*E\\.?\\s*(\\(|\\d)", RegexOption.IGNORE_CASE)
+    private val SE_REGEX = Regex("^S\\.?\\s*E\\.?\\s*(\\(|\\d|\\s)", RegexOption.IGNORE_CASE)
+    private val TE_REGEX = Regex("^T\\.?\\s*E\\.?\\s*(\\(|\\d|\\s)", RegexOption.IGNORE_CASE)
+    private val BE_REGEX = Regex("^B\\.?\\s*E\\.?\\s*(\\(|\\d|\\s)", RegexOption.IGNORE_CASE)
+    private val ME_REGEX = Regex("^M\\.?\\s*E\\.?\\s*(\\(|\\d|\\s)", RegexOption.IGNORE_CASE)
+    private val ME_LONG_REGEX = Regex("^MASTER\\s+OF\\s+ENGINEERING", RegexOption.IGNORE_CASE)
     
     private val MBA_REGEX = Regex("^M\\.?\\s*B\\.?\\s*A", RegexOption.IGNORE_CASE)
     private val MBA_LONG_REGEX = Regex("MASTER\\s+OF\\s+BUSINESS\\s+ADMINISTRATION", RegexOption.IGNORE_CASE)

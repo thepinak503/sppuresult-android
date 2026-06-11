@@ -160,6 +160,7 @@ fun ExamDatesScreen(
                                 ) { item ->
                                     ExamDateCard(
                                         item = item,
+                                        modifier = Modifier.animateItem(),
                                     )
                                 }
                             }
