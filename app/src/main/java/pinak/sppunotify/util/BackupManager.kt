@@ -19,6 +19,7 @@ import javax.inject.Singleton
 data class AppBackup(
     val profiles: List<UserProfile>,
     val watchlistKeywords: Set<String>,
+    val subscribedDepartments: Set<String> = emptySet(),
     val priorityKeywords: Set<String>,
     val bookmarks: List<ResultEntity>,
     val timestamp: Long = System.currentTimeMillis(),
@@ -39,6 +40,7 @@ class BackupManager @Inject constructor(
         val backup = AppBackup(
             profiles = prefs.profiles,
             watchlistKeywords = prefs.watchlistKeywords,
+            subscribedDepartments = prefs.subscribedDepartments,
             priorityKeywords = prefs.priorityKeywords,
             bookmarks = bookmarks
         )

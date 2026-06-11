@@ -57,6 +57,7 @@ class ResultSyncWorker @AssistedInject constructor(
             // 1. Sync Results & Auto-Cleanup
             val newResults = repository.fetchResults()
             if (newResults.isNotEmpty() && prefs.notificationsEnabled) {
+                val subscribedDepartments = prefs.subscribedDepartments
                 val keywords = prefs.watchlistKeywords
                 val priorityKeywords = prefs.priorityKeywords
                 
@@ -66,21 +67,28 @@ class ResultSyncWorker @AssistedInject constructor(
                     }
                 }
                 
+                // A result qualifies for a normal notification if:
+                // 1. It belongs to a subscribed department, OR
+                // 2. It matches a watchlist keyword
+                // If nothing is subscribed (no depts, no keywords), NO notifications are sent.
                 val normalMatched = newResults.filter { result ->
-                    (keywords.isEmpty() || keywords.any { keyword ->
+                    val matchesDepartment = subscribedDepartments.isNotEmpty() &&
+                        result.department in subscribedDepartments
+                    val matchesKeyword = keywords.isNotEmpty() && keywords.any { keyword ->
                         result.title.contains(keyword, ignoreCase = true)
-                    }) && priorityMatched.none { it.id == result.id }
+                    }
+                    (matchesDepartment || matchesKeyword) && priorityMatched.none { it.id == result.id }
                 }
                 
                 if (priorityMatched.isNotEmpty()) {
                     notificationHelper.showPriorityResultNotification(
-                        priorityMatched.map { "⭐ PRIORITY RESULT ⭐" to it.title }
+                        priorityMatched.map { pinak.sppunotify.util.NotificationResult("⭐ PRIORITY RESULT ⭐", it.title, it.id) }
                     )
                 }
                 
                 if (normalMatched.isNotEmpty()) {
                     notificationHelper.showResultNotification(
-                        normalMatched.map { "New Result Published!" to it.title }
+                        normalMatched.map { pinak.sppunotify.util.NotificationResult("New Result Published!", it.title, it.id) }
                     )
                 }
             }
@@ -118,6 +126,7 @@ class ResultSyncWorker @AssistedInject constructor(
                         id = result.id,
                         title = result.title,
                         date = result.publishedDate,
+                        department = result.department,
                     )
                 }
                 val encoded = items.map { it.encode() }.toSet()

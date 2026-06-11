@@ -61,6 +61,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
@@ -384,7 +388,65 @@ fun SettingsScreen(
                 }
             }
 
-            // Smart Watchlist Card
+            // Subscribe to Departments Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(10.dp))
+                        Text("📋 " + stringResource(R.string.subscribe_departments), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.subscribe_departments_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+
+                    val subscribed = userPreferences.subscribedDepartments
+                    val hasSubscriptions = subscribed.isNotEmpty() || userPreferences.watchlistKeywords.isNotEmpty() || userPreferences.priorityKeywords.isNotEmpty()
+
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        pinak.sppunotify.util.DepartmentClassifier.departments.filter { it != "All" }.forEach { dept ->
+                            val isSubscribed = dept in subscribed
+                            FilterChip(
+                                selected = isSubscribed,
+                                onClick = { viewModel.toggleDepartmentSubscription(dept) },
+                                label = { Text(dept, style = MaterialTheme.typography.labelMedium) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            )
+                        }
+                    }
+
+                    if (!hasSubscriptions) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.no_subscriptions_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            // Smart Watchlist Keywords Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -399,7 +461,7 @@ fun SettingsScreen(
                         Text(stringResource(R.string.smart_watchlist), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("Only get notifications for results matching these keywords. Leave empty to get all notifications.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.watchlist_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(12.dp))
 
                     var newKeyword by remember { mutableStateOf("") }
@@ -432,6 +494,53 @@ fun SettingsScreen(
                                     shape = RoundedCornerShape(8.dp)
                                 )
                             }
+                        }
+                    }
+
+                    // ── Suggested Keywords ──────────────────────────────────────
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    Spacer(Modifier.height(8.dp))
+
+                    val allKeywords = userPreferences.watchlistKeywords
+
+                    Text(
+                        stringResource(R.string.suggested_keywords),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.suggested_keywords_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        pinak.sppunotify.util.DepartmentClassifier.suggestedKeywords.filter { it !in allKeywords }.forEach { suggestion ->
+                            AssistChip(
+                                onClick = { viewModel.addKeyword(suggestion) },
+                                label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                },
+                                shape = RoundedCornerShape(6.dp),
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                    labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            )
                         }
                     }
                 }

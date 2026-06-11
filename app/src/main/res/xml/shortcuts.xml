@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="search_results"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification"
+        android:shortcutShortLabel="@string/shortcut_search"
+        android:shortcutLongLabel="@string/shortcut_search_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="sppuwatch://notify/home" />
+        <category android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="check_status"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification"
+        android:shortcutShortLabel="@string/shortcut_status"
+        android:shortcutLongLabel="@string/shortcut_status_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="sppuwatch://notify/home?checkStatus=1" />
+        <category android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="refresh_all"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification"
+        android:shortcutShortLabel="@string/shortcut_refresh"
+        android:shortcutLongLabel="@string/shortcut_refresh_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="sppuwatch://notify/home?refresh=1" />
+        <category android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

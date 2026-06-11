@@ -151,9 +151,13 @@ fun ExamDatesScreen(
                                     top = 8.dp, bottom = 120.dp
                                 ),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
                             ) {
-                                items(examDates, key = { it.courseName }) { item ->
+                                items(
+                                    items = examDates,
+                                    key = { it.courseName + it.startDate },
+                                    contentType = { "exam-date" },
+                                ) { item ->
                                     ExamDateCard(
                                         item = item,
                                     )

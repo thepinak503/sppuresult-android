@@ -26,6 +26,7 @@ class PreferenceManager @Inject constructor(
         val EXAM_DATE_SYNC_INTERVAL = intPreferencesKey("exam_date_sync_interval_min")
         val CIRCULAR_SYNC_INTERVAL = intPreferencesKey("circular_sync_interval_min")
         val WATCHLIST_KEYWORDS = stringSetPreferencesKey("watchlist_keywords")
+        val SUBSCRIBED_DEPARTMENTS = stringSetPreferencesKey("subscribed_departments")
         val USER_PROFILES = stringSetPreferencesKey("user_profiles")
         val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
         val THEME_MODE = stringPreferencesKey("theme_mode")
@@ -53,6 +54,7 @@ class PreferenceManager @Inject constructor(
             examDateSyncInterval = preferences[PreferencesKeys.EXAM_DATE_SYNC_INTERVAL] ?: 180,
             circularSyncInterval = preferences[PreferencesKeys.CIRCULAR_SYNC_INTERVAL] ?: 240,
             watchlistKeywords = preferences[PreferencesKeys.WATCHLIST_KEYWORDS] ?: emptySet(),
+            subscribedDepartments = preferences[PreferencesKeys.SUBSCRIBED_DEPARTMENTS] ?: emptySet(),
             profiles = profiles,
             activeProfileId = preferences[PreferencesKeys.ACTIVE_PROFILE_ID],
             themeMode = preferences[PreferencesKeys.THEME_MODE] ?: "SYSTEM",
@@ -137,6 +139,17 @@ class PreferenceManager @Inject constructor(
         dataStore.edit { preferences ->
             val current = preferences[PreferencesKeys.WATCHLIST_KEYWORDS] ?: emptySet()
             preferences[PreferencesKeys.WATCHLIST_KEYWORDS] = current - keyword
+        }
+    }
+
+    suspend fun toggleSubscribedDepartment(department: String) {
+        dataStore.edit { preferences ->
+            val current = preferences[PreferencesKeys.SUBSCRIBED_DEPARTMENTS] ?: emptySet()
+            preferences[PreferencesKeys.SUBSCRIBED_DEPARTMENTS] = if (department in current) {
+                current - department
+            } else {
+                current + department
+            }
         }
     }
 
@@ -246,6 +259,7 @@ class PreferenceManager @Inject constructor(
             val encryptedProfiles = ProfileSerializer.serializeEncryptedList(backup.profiles)
             preferences[PreferencesKeys.USER_PROFILES] = encryptedProfiles
             preferences[PreferencesKeys.WATCHLIST_KEYWORDS] = backup.watchlistKeywords
+            preferences[PreferencesKeys.SUBSCRIBED_DEPARTMENTS] = backup.subscribedDepartments
             preferences[PreferencesKeys.PRIORITY_KEYWORDS] = backup.priorityKeywords
             
             if (preferences[PreferencesKeys.ACTIVE_PROFILE_ID] == null && backup.profiles.isNotEmpty()) {
@@ -262,6 +276,7 @@ data class UserPreferences(
     val examDateSyncInterval: Int,
     val circularSyncInterval: Int,
     val watchlistKeywords: Set<String>,
+    val subscribedDepartments: Set<String>,
     val profiles: List<UserProfile>,
     val activeProfileId: String?,
     val themeMode: String = "SYSTEM",

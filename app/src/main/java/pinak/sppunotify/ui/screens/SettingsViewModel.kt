@@ -35,7 +35,7 @@ class SettingsViewModel @Inject constructor(
     val userPreferences: StateFlow<UserPreferences> = preferenceManager.preferencesFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = UserPreferences(true, 15, 60, 180, 240, emptySet(), emptyList(), null)
+        initialValue = UserPreferences(true, 15, 60, 180, 240, emptySet(), emptySet(), emptyList(), null)
     )
 
     fun syncAll() {
@@ -88,6 +88,12 @@ class SettingsViewModel @Inject constructor(
     fun removeKeyword(keyword: String) {
         viewModelScope.launch {
             preferenceManager.removeKeyword(keyword)
+        }
+    }
+
+    fun toggleDepartmentSubscription(department: String) {
+        viewModelScope.launch {
+            preferenceManager.toggleSubscribedDepartment(department)
         }
     }
 

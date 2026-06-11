@@ -370,9 +370,13 @@ fun HomeScreen(
                         )
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         ) {
-                            itemsIndexed(results.take(15)) { index, res ->
+                            itemsIndexed(
+                                items = results.take(15),
+                                key = { _, res -> res.id },
+                                contentType = { _, _ -> "search-result" },
+                            ) { index, res ->
                                 AnimatedVisibility(
                                     visible = true,
                                     enter = slideInVertically(
@@ -419,11 +423,11 @@ fun HomeScreen(
                     enter = slideInHorizontally { -it } + fadeIn()
                 ) {
                     LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(departments) { dept ->
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(departments, key = { it }) { dept ->
                             FilterChip(
                                 selected = selectedDept == dept,
                                 onClick = { viewModel.onDepartmentSelected(dept) },
@@ -496,11 +500,12 @@ fun HomeScreen(
                                     top = 16.dp,
                                     bottom = 160.dp
                                 ),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
                                 itemsIndexed(
                                     items = results,
-                                    key = { _, result -> result.id }
+                                    key = { _, result -> result.id },
+                                    contentType = { _, _ -> "result-card" },
                                 ) { _, result ->
                                     ResultCard(
                                         result = result,

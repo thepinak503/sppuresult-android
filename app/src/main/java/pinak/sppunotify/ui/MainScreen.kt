@@ -60,10 +60,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
+import androidx.navigation.navDeepLink
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
+import pinak.sppunotify.MainActivity
 import pinak.sppunotify.R
 import pinak.sppunotify.ui.screens.*
 
@@ -84,6 +86,23 @@ sealed class Screen(val route: String, val labelRes: Int, val icon: ImageVector,
 fun MainScreen() {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val activity = context as? Activity
+
+    // Handle deep links from notifications and shortcuts
+    LaunchedEffect(activity) {
+        activity?.intent?.data?.let { uri ->
+            val request = androidx.navigation.NavDeepLinkRequest.Builder.fromUri(uri).build()
+            navController.handleDeepLink(request)
+        }
+    }
+
+    // Watch for new intents (onNewIntent from deep links)
+    DisposableEffect(activity) {
+        if (activity is MainActivity) {
+            activity.setNavController(navController)
+        }
+        onDispose { }
+    }
 
     val items = listOf(
         Screen.Home,
@@ -111,7 +130,6 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val showNav = currentDestination?.route in items.map { it.route }
-
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     ModalNavigationDrawer(
@@ -165,7 +183,7 @@ fun MainScreen() {
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                "v1.3.1",
+                                "v1.4.0",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -347,7 +365,10 @@ private fun NavHostContent(
             ) + fadeOut(animationSpec = tween(300))
         }
     ) {
-        composable(Screen.Home.route) {
+        composable(
+            Screen.Home.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "sppuwatch://notify/home" }),
+        ) {
             HomeScreen(
                 viewModel = hiltViewModel(),
                 onResultClick = { res -> navController.navigate("details/${res.id}") },
@@ -360,13 +381,22 @@ private fun NavHostContent(
         composable(Screen.Links.route) {
             LinksScreen(onBackClick = onMenuClick, isTopLevel = true, scrollState = linksScrollState)
         }
-        composable(Screen.Revaluation.route) {
+        composable(
+            Screen.Revaluation.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "sppuwatch://notify/reval" }),
+        ) {
             RevaluationScreen(listState = revalScrollState, onMenuClick = onMenuClick)
         }
-        composable(Screen.Circulars.route) {
+        composable(
+            Screen.Circulars.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "sppuwatch://notify/circulars" }),
+        ) {
             CircularsScreen(listState = circularsScrollState, onMenuClick = onMenuClick)
         }
-        composable(Screen.ExamDates.route) {
+        composable(
+            Screen.ExamDates.route,
+            deepLinks = listOf(navDeepLink { uriPattern = "sppuwatch://notify/exam_dates" }),
+        ) {
             ExamDatesScreen(listState = examDatesScrollState, onMenuClick = onMenuClick)
         }
         composable(Screen.Calculator.route) {
@@ -391,6 +421,7 @@ private fun NavHostContent(
         composable(
             route = "details/{resultId}",
             arguments = listOf(navArgument("resultId") { type = NavType.StringType }),
+            deepLinks = listOf(navDeepLink { uriPattern = "sppuwatch://notify/details/{resultId}" }),
         ) {
             val viewModel: DetailsViewModel = hiltViewModel()
             val resultData by viewModel.result.collectAsState()

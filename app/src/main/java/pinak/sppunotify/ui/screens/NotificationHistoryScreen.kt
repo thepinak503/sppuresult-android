@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,16 +54,14 @@ fun NotificationHistoryScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Filter chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Filter chips using LazyRow for better scrolling performance
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 val filterEntries = listOf("All" to "All", "RESULT" to "Results", "REVAL" to "Reval", "EXAM_DATE" to "Exam Dates", "NEWS" to "News")
-                filterEntries.forEach { (key, label) ->
+                items(filterEntries, key = { it.first }) { (key, label) ->
                     FilterChip(
                         selected = filterType == key,
                         onClick = { filterType = key },
@@ -99,9 +98,13 @@ fun NotificationHistoryScreen(
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 80.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(filtered, key = { it.id }) { entry ->
+                    items(
+                        items = filtered,
+                        key = { it.id },
+                        contentType = { entry -> entry.type },
+                    ) { entry ->
                         NotificationHistoryCard(entry = entry)
                     }
                 }

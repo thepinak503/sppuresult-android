@@ -121,9 +121,13 @@ fun PdfViewerScreen(
                 else -> {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(16.dp)
+                        contentPadding = PaddingValues(16.dp),
                     ) {
-                        items(pageBitmaps) { bitmap ->
+                        items(
+                            items = pageBitmaps,
+                            key = { it.hashCode() },
+                            contentType = { "pdf-page" },
+                        ) { bitmap ->
                             Image(
                                 bitmap = bitmap.asImageBitmap(),
                                 contentDescription = null,

@@ -115,9 +115,13 @@ fun VaultScreen(
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize().padding(padding)
+                modifier = Modifier.fillMaxSize().padding(padding),
             ) {
-                items(results, key = { it.uid }) { res ->
+                items(
+                    items = results,
+                    key = { it.uid },
+                    contentType = { "vault-result" },
+                ) { res ->
                     VaultCard(
                         result = res,
                         modifier = Modifier.animateItem(),

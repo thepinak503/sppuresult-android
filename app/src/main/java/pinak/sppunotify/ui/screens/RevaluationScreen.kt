@@ -186,8 +186,13 @@ fun RevaluationScreen(
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            items(filteredCourses.take(15)) { course ->
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            items(
+                                items = filteredCourses.take(15),
+                                key = { "${it.course}|${it.subject}" },
+                            ) { course ->
                                 ListItem(
                                     headlineContent = { Text(course.course, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                     supportingContent = { Text(course.subject, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -215,7 +220,7 @@ fun RevaluationScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(departments) { dept ->
+                        items(departments, key = { it }) { dept ->
                             FilterChip(
                                 selected = selectedDept == dept,
                                 onClick = { viewModel.onDepartmentSelected(dept) },
@@ -371,11 +376,12 @@ fun RevaluationScreen(
                                         top = 16.dp,
                                         bottom = 120.dp
                                     ),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
                                     itemsIndexed(
                                         items = filteredCourses,
-                                        key = { _, course -> "${course.course}|${course.subject}|${course.eventTarget}" }
+                                        key = { _, course -> "${course.course}|${course.subject}|${course.eventTarget}" },
+                                        contentType = { _, _ -> "reval-course" },
                                     ) { _, course ->
                                         RevalCourseCard(
                                             course = course,

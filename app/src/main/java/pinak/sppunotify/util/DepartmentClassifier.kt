@@ -6,8 +6,40 @@ object DepartmentClassifier {
         "All", "FE", "SE", "TE", "BE",
         "MBA", "MCA", "M.Sc", "M.A./M.Com",
         "B.Sc", "B.Com", "BBA/BCA", "B.A.",
-        "B.Pharm", "Other UG", "Other PG",
+        "B.Pharm", "M.Pharm", "B.Ed", "M.Ed",
+        "B.Arch", "M.Arch", "LL.B", "LL.M",
+        "HMCT", "B.Voc", "Other UG", "Other PG",
         "Law", "Diploma",
+    )
+
+    /** Suggested keywords for the watchlist — covers specializations and program names */
+    val suggestedKeywords = listOf(
+        // Engineering branches
+        "Computer", "Mechanical", "Civil", "Electrical", "E&TC", "IT",
+        "Electronics", "Instrumentation", "Automation", "Robotics",
+        // Science fields
+        "Physics", "Chemistry", "Mathematics", "Biology", "Zoology",
+        "Botany", "Biotechnology", "Microbiology", "Statistics",
+        "Geography", "Geology", "Environmental Science",
+        // Management & Commerce
+        "Business Administration", "Finance", "Marketing", "HR",
+        // Arts & Humanities
+        "Economics", "History", "Political Science", "Psychology",
+        "Sociology", "Philosophy", "English", "Marathi", "Hindi",
+        "Sanskrit", "Foreign Language",
+        // Pharmacy
+        "Pharmaceutics", "Pharmacology", "Pharm",
+        // Law
+        "Law", "Legal", "Corporate Law",
+        // Exam pattern years
+        "2019 Pattern", "2024 Pattern", "CBCS",
+        // Education
+        "Education", "Teaching",
+        // Architecture & Design
+        "Architecture", "Design", "Planning",
+        // Other common
+        "Hotel Management", "Tourism", "Vocational",
+        "Engineering", "Technology", "Semester", "Annual",
     )
 
     fun classify(title: String): String {

@@ -7,4 +7,5 @@ data class ResultDto(
     val published: String,
     val patternName: String = "",
     val patternId: String = "",
+    val department: String = "",
 )

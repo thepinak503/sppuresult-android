@@ -5,7 +5,7 @@
 - **App Name**: SPPU Result Watch
 - **Package**: `pinak.sppunotify`
 - **Application ID**: `pinak.sppunotify`
-- **Version**: 1.0 (versionCode 1)
+- **Version**: 1.4.0 (versionCode 6)
 - **Min SDK**: 24 | **Target SDK**: 36 | **Compile SDK**: 36
 - **Language**: Kotlin 2.1.10
 - **UI Framework**: Jetpack Compose (Material 3) + Navigation Compose
@@ -42,7 +42,7 @@ plugins {
 - Plugins: android.application, kotlin.android, kotlin.compose, hilt, ksp, kotlin.plugin.serialization 2.1.10
 - `namespace = "pinak.sppunotify"`
 - `compileSdk = 36`, `minSdk = 24`, `targetSdk = 36`
-- `versionCode = 1`, `versionName = "1.0"`
+- `versionCode = 6`, `versionName = "1.4.0"`
 - `buildFeatures { compose = true; buildConfig = false }`
 - `compileOptions { JavaVersion.VERSION_17 }`
 - Release: minifyEnabled, shrinkResources, proguard, signing with debug key

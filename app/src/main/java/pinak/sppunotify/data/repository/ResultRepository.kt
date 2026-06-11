@@ -46,7 +46,9 @@ class ResultRepository @Inject constructor(
         
         // Calculate newly found results for notification purposes BEFORE inserting
         val existingIds = db.dao.getAllResultIds().toSet()
-        val newResults = scrapedResults.filter { it.id !in existingIds }
+        val newResults = scrapedResults.filter { it.id !in existingIds }.map {
+            it.copy(department = DepartmentClassifier.classify(it.title))
+        }
         
         val entities = scrapedResults.map { it.toEntity() }
         db.dao.insertResults(entities)

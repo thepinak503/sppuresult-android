@@ -75,9 +75,9 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
                     start = 16.dp, 
                     end = 16.dp, 
                     top = 16.dp, 
-                    bottom = 120.dp // Space for floating nav bar
+                    bottom = 120.dp
                 ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
                     Card(
@@ -109,7 +109,7 @@ fun LinksScreen(onBackClick: () -> Unit, isTopLevel: Boolean = false, scrollStat
                             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                         )
                     }
-                    items(categoryLinks) { link ->
+                    items(categoryLinks, key = { it.url }) { link ->
                         LinkCard(link = link) {
                             val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
                             context.safeStartActivity(intent)

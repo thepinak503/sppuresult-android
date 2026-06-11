@@ -14,6 +14,17 @@
     <string name="widget_loading">Loading latest results…</string>
     <string name="widget_just_now">Just now</string>
     <string name="widget_status_indicator">Server status indicator</string>
+    <string name="widget_description">SPPU server status with latest results</string>
+    <string name="widget_status_online">Portal Online</string>
+    <string name="widget_status_slow">Portal Slow</string>
+    <string name="widget_status_busy">Portal Busy</string>
+    <string name="widget_status_down">Portal Down</string>
+    <string name="widget_no_results">No results yet</string>
+    <string name="widget_results_count">%1$d results</string>
+    <string name="widget_response_time">%1$dms</string>
+    <string name="widget_sync_time">Sync: %1$s</string>
+    <string name="widget_refresh">Refresh</string>
+    <string name="widget_open_app">Open app</string>
 
     <!-- Navigation -->
     <string name="nav_results">Results</string>
@@ -138,4 +149,21 @@
     <string name="open_source_desc">SPPU Result Notify is Free and Open Source Software. You are free to view, modify, and distribute the source code under applicable open source license terms.</string>
     <string name="version_text">Version %1$s</string>
     <string name="copyright_sppu">2026 Savitribai Phule Pune University</string>
+
+    <!-- App Shortcuts -->
+    <string name="shortcut_search">Search</string>
+    <string name="shortcut_search_long">Search Results</string>
+    <string name="shortcut_status">Check Status</string>
+    <string name="shortcut_status_long">Check Server Status</string>
+    <string name="shortcut_refresh">Refresh</string>
+    <string name="shortcut_refresh_long">Refresh All Results</string>
+    <string name="shortcut_disabled">Open the app to enable shortcuts</string>
+
+    <!-- Department Subscriptions -->
+    <string name="subscribe_departments">Subscribe to Departments</string>
+    <string name="subscribe_departments_desc">Tap departments below to subscribe and get notified only when results are published for your selected branches.</string>
+    <string name="no_subscriptions_warning">⚠ No departments or keywords selected — you won\'t receive any result notifications!</string>
+    <string name="watchlist_desc">Additional keyword-based matching. Results matching these keywords will also trigger notifications.</string>
+    <string name="suggested_keywords">Suggested Keywords</string>
+    <string name="suggested_keywords_desc">Tap a suggestion to add it to your watchlist</string>
 </resources>

@@ -186,9 +186,13 @@ fun CircularsScreen(
                                     top = 8.dp, bottom = 120.dp
                                 ),
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
                             ) {
-                                items(filteredCirculars, key = { it.link }) { item ->
+                                items(
+                                    items = filteredCirculars,
+                                    key = { it.link },
+                                    contentType = { "circular" },
+                                ) { item ->
                                     CircularCard(
                                         item = item,
                                     ) {

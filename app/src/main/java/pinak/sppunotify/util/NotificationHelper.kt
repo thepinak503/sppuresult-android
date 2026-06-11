@@ -8,6 +8,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.app.TaskStackBuilder
+import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,6 +18,19 @@ import pinak.sppunotify.MainActivity
 import pinak.sppunotify.R
 import pinak.sppunotify.data.local.NotificationHistoryDao
 import pinak.sppunotify.data.local.NotificationHistoryEntity
+
+/**
+ * A single result item passed from workers to the notification helper.
+ * Includes the result ID for deep linking to the detail screen.
+ */
+data class NotificationResult(
+    val title: String,
+    val message: String,
+    val resultId: String = "",
+)
+
+private const val DEEP_LINK_SCHEME = "sppuwatch"
+private const val DEEP_LINK_HOST = "notify"
 
 class NotificationHelper(
     private val context: Context,
@@ -104,15 +119,33 @@ class NotificationHelper(
         }
     }
 
-    fun showNewsNotification(title: String, message: String, type: String = "ANNOUNCEMENT") {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE
+    // ── Deep link helpers ────────────────────────────────────────────────────
+
+    private fun createDeepLinkIntent(uri: String): Intent {
+        return Intent(
+            Intent.ACTION_VIEW,
+            "$DEEP_LINK_SCHEME://$DEEP_LINK_HOST/$uri".toUri(),
+            context,
+            MainActivity::class.java,
         )
-        
+    }
+
+    private fun createDeepLinkPendingIntent(
+        uri: String,
+        requestCode: Int = 0,
+    ): PendingIntent? {
+        val intent = createDeepLinkIntent(uri)
+        return TaskStackBuilder.create(context).run {
+            addNextIntentWithParentStack(intent)
+            getPendingIntent(requestCode, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        }
+    }
+
+    // ── News / Announcements ─────────────────────────────────────────────────
+
+    fun showNewsNotification(title: String, message: String, type: String = "ANNOUNCEMENT") {
+        val pendingIntent = createDeepLinkPendingIntent("home")
+
         val notification = NotificationCompat.Builder(context, CHANNEL_NEWS)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -132,14 +165,11 @@ class NotificationHelper(
         trackNotification("NEWS", title, message)
     }
 
+    // ── Revaluation → opens Revaluation tab ──────────────────────────────────
+
     fun showRevalNotification(count: Int) {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent = createDeepLinkPendingIntent("reval")
+
         val notification = NotificationCompat.Builder(context, CHANNEL_REVAL)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("New Revaluation Courses")
@@ -153,79 +183,95 @@ class NotificationHelper(
         trackNotification("REVAL", "New Revaluation Courses", "$count course(s)")
     }
 
-    fun showResultNotification(results: List<Pair<String, String>>) {
-        showGenericResultNotification(results, CHANNEL_RESULTS, GROUP_RESULTS)
+    // ── Results → opens result detail screen ─────────────────────────────────
+
+    fun showResultNotification(results: List<NotificationResult>) {
+        showGenericResultNotification(results, CHANNEL_RESULTS, GROUP_RESULTS, isPriority = false)
     }
 
-    fun showPriorityResultNotification(results: List<Pair<String, String>>) {
-        showGenericResultNotification(results, CHANNEL_PRIORITY, GROUP_PRIORITY)
+    fun showPriorityResultNotification(results: List<NotificationResult>) {
+        showGenericResultNotification(results, CHANNEL_PRIORITY, GROUP_PRIORITY, isPriority = true)
     }
 
     private fun showGenericResultNotification(
-        results: List<Pair<String, String>>,
+        results: List<NotificationResult>,
         channelId: String,
-        groupKey: String
+        groupKey: String,
+        isPriority: Boolean,
     ) {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-
         if (results.size == 1) {
-            val (title, message) = results.first()
-            val bigText = if (channelId == CHANNEL_PRIORITY) "⭐ STARRED MATCH ⭐\n\n$message" else "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
+            val item = results.first()
+            val uri = if (item.resultId.isNotEmpty()) "details/${item.resultId}" else "home"
+            val pendingIntent = createDeepLinkPendingIntent(uri, item.resultId.hashCode())
+
+            val bigText = if (isPriority) {
+                "⭐ STARRED MATCH ⭐\n\n${item.message}"
+            } else {
+                "📄 ${item.message}\n🔗 Tap to view details"
+            }
+
             val notification = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(title)
-                .setContentText(message)
+                .setContentTitle(item.title)
+                .setContentText(item.message)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setGroup(groupKey)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .apply {
-                    if (channelId == CHANNEL_PRIORITY) {
+                    if (isPriority) {
                         setCategory(NotificationCompat.CATEGORY_ALARM)
                         setDefaults(NotificationCompat.DEFAULT_ALL)
                     }
                 }
                 .build()
-            notificationManager.notify(message.hashCode(), notification)
+            notificationManager.notify(item.message.hashCode(), notification)
+            trackNotification(if (isPriority) "PRIORITY" else "RESULT", item.title, item.message)
         } else {
             val summaryText = "${results.size} new result(s) published"
-            results.forEach { (title, message) ->
-                val bigText = if (channelId == CHANNEL_PRIORITY) "⭐ STARRED MATCH ⭐\n\n$message" else "\uD83D\uDCC4 $message\n\uD83D\uDD17 Tap to view details"
+            results.forEach { item ->
+                val uri = if (item.resultId.isNotEmpty()) "details/${item.resultId}" else "home"
+                val pendingIntent = createDeepLinkPendingIntent(uri, item.resultId.hashCode())
+
+                val bigText = if (isPriority) {
+                    "⭐ STARRED MATCH ⭐\n\n${item.message}"
+                } else {
+                    "📄 ${item.message}\n🔗 Tap to view details"
+                }
+
                 val notification = NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle(title)
-                    .setContentText(message)
+                    .setContentTitle(item.title)
+                    .setContentText(item.message)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setGroup(groupKey)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)
                     .build()
-                notificationManager.notify(message.hashCode(), notification)
+                notificationManager.notify(item.message.hashCode(), notification)
+                trackNotification(if (isPriority) "PRIORITY" else "RESULT", item.title, item.message)
             }
 
+            val summaryPendingIntent = createDeepLinkPendingIntent("home", SUMMARY_ID)
             val summary = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(if (channelId == CHANNEL_PRIORITY) "Priority Results Available" else "New Results Available")
+                .setContentTitle(if (isPriority) "Priority Results Available" else "New Results Available")
                 .setContentText(summaryText)
-                .setStyle(NotificationCompat.BigTextStyle().bigText("$summaryText\n\n${results.joinToString("\\n") { it.second }}"))
+                .setStyle(NotificationCompat.BigTextStyle().bigText("$summaryText\n\n${results.joinToString("\n") { it.message }}"))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setGroup(groupKey)
                 .setGroupSummary(true)
+                .setContentIntent(summaryPendingIntent)
                 .setAutoCancel(true)
                 .build()
 
-            notificationManager.notify(if (channelId == CHANNEL_PRIORITY) PRIORITY_SUMMARY_ID else SUMMARY_ID, summary)
+            notificationManager.notify(if (isPriority) PRIORITY_SUMMARY_ID else SUMMARY_ID, summary)
         }
-        results.forEach { trackNotification(if (channelId == CHANNEL_PRIORITY) "PRIORITY" else "RESULT", it.first, it.second) }
     }
+
+    // ── Downloads ────────────────────────────────────────────────────────────
 
     fun showDownloadNotification(success: Boolean, fileName: String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_DOWNLOADS)
@@ -235,28 +281,23 @@ class NotificationHelper(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
-
         notificationManager.notify(fileName.hashCode(), notification)
     }
 
+    // ── Exam Dates → opens Exam Dates tab ────────────────────────────────────
+
     fun showExamDateNotification(newDates: List<String>) {
         if (newDates.isEmpty()) return
-        
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-        
+
+        val pendingIntent = createDeepLinkPendingIntent("exam_dates")
+
         val contentText = if (newDates.size == 1) {
             newDates.first()
         } else {
             "${newDates.size} new exam form dates updated"
         }
 
-        val bigText = "\uD83D\uDCC5 Exam Form Dates:\n" + newDates.joinToString("\n")
+        val bigText = "📅 Exam Form Dates:\n" + newDates.joinToString("\n")
 
         val notification = NotificationCompat.Builder(context, CHANNEL_EXAM_DATES)
             .setSmallIcon(R.drawable.ic_notification)
@@ -271,14 +312,11 @@ class NotificationHelper(
         trackNotification("EXAM_DATE", "New Exam Form Dates", "${newDates.size} date(s)")
     }
 
+    // ── Circulars → opens Circulars tab ──────────────────────────────────────
+
     fun showCircularNotification(count: Int) {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent = createDeepLinkPendingIntent("circulars")
+
         val notification = NotificationCompat.Builder(context, CHANNEL_CIRCULARS)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("New University Circulars")
@@ -291,6 +329,8 @@ class NotificationHelper(
         notificationManager.notify(CIRCULAR_NOTIFICATION_ID, notification)
         trackNotification("CIRCULAR", "New University Circulars", "$count circular(s)")
     }
+
+    // ── Updates ──────────────────────────────────────────────────────────────
 
     fun showUpdateNotification(versionName: String, updateUrl: String) {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateUrl)).apply {
@@ -314,6 +354,8 @@ class NotificationHelper(
         notificationManager.notify(UPDATE_NOTIFICATION_ID, notification)
     }
 
+    // ── History tracking ─────────────────────────────────────────────────────
+
     private fun trackNotification(type: String, title: String, message: String) {
         historyDao?.let { dao ->
             notificationScope.launch {
@@ -324,7 +366,6 @@ class NotificationHelper(
                         type = type
                     )
                 )
-                // Cleanup old entries (keep last 7 days)
                 val weekAgo = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
                 dao.deleteOld(weekAgo)
             }

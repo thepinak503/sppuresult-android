@@ -2,6 +2,7 @@ package pinak.sppunotify
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -63,6 +64,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavDeepLinkRequest
+import androidx.navigation.NavHostController
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -83,6 +86,14 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var preferenceManager: PreferenceManager
+
+    /** Reference set by MainScreen composable for handling deep links */
+    private var navController: NavHostController? = null
+
+    /** Called from MainScreen to register the nav controller for deep link handling */
+    fun setNavController(controller: NavHostController) {
+        navController = controller
+    }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -404,6 +415,17 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         refreshRateHandler.removeCallbacks(refreshRateRunnable)
         super.onPause()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Handle deep links from notifications and shortcuts
+        intent.data?.let { uri ->
+            val request = NavDeepLinkRequest.Builder.fromUri(uri).build()
+            navController?.handleDeepLink(request)
+        }
+        // Ensure the new intent is used by LaunchedEffect in MainScreen
+        setIntent(intent)
     }
 
     override fun onDestroy() {

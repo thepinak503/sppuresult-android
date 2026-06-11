@@ -11,12 +11,9 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.glance.*
-import androidx.glance.action.ActionParameters
-import androidx.glance.action.actionStartActivity
-import androidx.glance.action.clickable
+import androidx.glance.action.*
 import androidx.glance.appwidget.*
-import androidx.glance.appwidget.action.ActionCallback
-import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.*
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.layout.*
 import androidx.glance.state.PreferencesGlanceStateDefinition
@@ -32,6 +29,7 @@ import pinak.sppunotify.di.WidgetEntryPoint
 import java.text.SimpleDateFormat
 import java.util.*
 
+// ── Glance state keys ──────────────────────────────────────────────────────────
 object GlanceWidgetKeys {
     val statusLevel = stringPreferencesKey("status_level")
     val responseTime = longPreferencesKey("response_time")
@@ -47,11 +45,13 @@ data class WidgetResultItem(
     val id: String,
     val title: String,
     val date: String,
+    val department: String = "",
 ) {
     fun encode(): String = buildString {
         append(id); append(ITEM_DELIMITER)
         append(title); append(ITEM_DELIMITER)
-        append(date)
+        append(date); append(ITEM_DELIMITER)
+        append(department)
     }
 
     companion object {
@@ -62,12 +62,64 @@ data class WidgetResultItem(
                 id = parts[0],
                 title = parts.getOrElse(1) { "" },
                 date = parts.getOrElse(2) { "" },
+                department = parts.getOrElse(3) { "" },
             )
         }
     }
 }
 
+// ── Department accent colours ──────────────────────────────────────────────────
+private object WidgetDeptColors {
+    val FE      = Color(0xFF4A55A2)
+    val SE      = Color(0xFF0D7377)
+    val TE      = Color(0xFF2E7D32)
+    val BE      = Color(0xFF1565C0)
+    val MBA     = Color(0xFF6A1B9A)
+    val MCA     = Color(0xFF00838F)
+    val MSc     = Color(0xFF37474F)
+    val BCom    = Color(0xFFF57F17)
+    val BSc     = Color(0xFF558B2F)
+    val BA      = Color(0xFF4E342E)
+    val BPharm  = Color(0xFFAD1457)
+    val Law     = Color(0xFF37474F)
+    val Diploma = Color(0xFF5D4037)
+    val Default = Color(0xFF546E7A)
+
+    fun accentFor(department: String): Color = when {
+        department.startsWith("FE")                                                         -> FE
+        department.startsWith("SE")                                                         -> SE
+        department.startsWith("TE")                                                         -> TE
+        department.startsWith("BE")                                                         -> BE
+        department.startsWith("MBA")                                                        -> MBA
+        department.startsWith("MCA")                                                        -> MCA
+        department.startsWith("M.Sc") || department.startsWith("M.A") || department.startsWith("M.Com") -> MSc
+        department.startsWith("B.Com")                                                      -> BCom
+        department.startsWith("B.Sc")                                                       -> BSc
+        department.startsWith("B.A")                                                        -> BA
+        department.startsWith("B.Pharm")                                                    -> BPharm
+        department.startsWith("Law")                                                        -> Law
+        department.startsWith("Diploma")                                                    -> Diploma
+        else                                                                                -> Default
+    }
+}
+
+// ── Theme colours ──────────────────────────────────────────────────────────────
+private object WidgetColors {
+    val primary        = Color(0xFF5DADE2)
+    val onSurface      = Color(0xFFE1E3E5)
+    val onSurfaceDim   = Color(0xFFB0B3B8)
+    val onSurfaceMuted = Color(0xFF8B9198)
+    val outline        = Color(0xFF41484D)
+    val surfaceLight   = Color(0xFF222A2D)
+    val green          = Color(0xFF4CAF50)
+    val yellow         = Color(0xFFFFC107)
+    val orange         = Color(0xFFFF9800)
+    val red            = Color(0xFFF44336)
+}
+
+// ── Main widget ────────────────────────────────────────────────────────────────
 class GlanceServerStatusWidget : GlanceAppWidget() {
+
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -107,15 +159,12 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
                 val db = entryPoint.database()
 
                 val status = scraper.checkServerHealth()
-
                 var results = db.dao.getAllResults().first()
                 if (results.isEmpty()) {
                     try {
                         repository.fetchResults()
                         results = db.dao.getAllResults().first()
-                    } catch (e: Exception) {
-                        Log.e("GlanceWidget", "Network fetch failed", e)
-                    }
+                    } catch (_: Exception) { }
                 }
 
                 val now = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
@@ -124,16 +173,15 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
                         id = result.id,
                         title = result.title,
                         date = result.publishedDate,
+                        department = result.department,
                     )
                 }
                 val encoded = items.map { it.encode() }.toSet()
-                val total = results.size.toLong()
-
                 WidgetData(
                     statusLevel = status.statusLevel.name,
                     responseTime = status.responseTimeMs,
                     lastUpdated = now,
-                    totalResults = total,
+                    totalResults = results.size.toLong(),
                     encodedItems = encoded,
                     items = items,
                 )
@@ -160,6 +208,7 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
         val items: List<WidgetResultItem>,
     )
 
+    // ── ROOT COMPOSABLE ──────────────────────────────────────────────────────
     @Composable
     private fun WidgetContent(
         status: String,
@@ -168,19 +217,8 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
         total: Long,
         updated: String,
     ) {
-        val isDown = status == "DOWN"
-        val statusColor = when (status) {
-            "HEALTHY" -> Color(0xFF4CAF50)
-            "SLOW" -> Color(0xFFFFC107)
-            "BUSY" -> Color(0xFFFF9800)
-            else -> Color(0xFFF44336)
-        }
-        val statusLabel = when {
-            status == "HEALTHY" -> "Portal Online"
-            isDown -> "Portal Down"
-            status == "SLOW" -> "Portal Slow"
-            else -> "Portal Busy"
-        }
+        val statusColor = statusColor(status)
+        val statusLabel = statusLabel(status)
 
         Column(
             modifier = GlanceModifier
@@ -188,95 +226,23 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
                 .padding(12.dp)
                 .background(ImageProvider(R.drawable.widget_background))
                 .clickable(actionStartActivity<MainActivity>()),
-            verticalAlignment = Alignment.Top,
-            horizontalAlignment = Alignment.Start
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = GlanceModifier.fillMaxWidth()
-            ) {
-                // MATERIAL 3 STYLE BIG PLUS BUTTON
-                Box(
-                    modifier = GlanceModifier
-                        .size(48.dp)
-                        .background(ColorProvider(Color(0xFFEADDFF))) // M3 light primary container
-                        .cornerRadius(16.dp)
-                        .clickable(actionStartActivity<MainActivity>()),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "+",
-                        style = TextStyle(
-                            color = ColorProvider(Color(0xFF21005D)), // M3 on primary container
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                    )
-                }
-                
-                Spacer(modifier = GlanceModifier.width(12.dp))
-
-                Column(modifier = GlanceModifier.defaultWeight()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = GlanceModifier
-                                .size(10.dp)
-                                .background(ColorProvider(statusColor))
-                                .cornerRadius(5.dp),
-                            content = {}
-                        )
-                        Spacer(modifier = GlanceModifier.width(6.dp))
-                        Text(
-                            text = statusLabel,
-                            style = TextStyle(
-                                color = ColorProvider(Color.White),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                    Text(
-                        text = if (time > 0) "${time}ms • $total results" else "$total results",
-                        style = TextStyle(
-                            color = ColorProvider(Color(0xFFCBC4CF)),
-                            fontSize = 12.sp
-                        )
-                    )
-                }
-
-                // BIG TOUCH AREA REFRESH
-                Box(
-                    modifier = GlanceModifier
-                        .size(48.dp)
-                        .clickable(actionRunCallback<RefreshWidgetCallback>()),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "\u21BB",
-                        style = TextStyle(
-                            color = ColorProvider(Color.White),
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-            }
+            // ── Header ───────────────────────────────────────────────────────
+            HeaderSection(statusColor, statusLabel, time, total)
 
             Spacer(modifier = GlanceModifier.height(8.dp))
 
-            // Results list
-            Box(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-                if (items.isEmpty()) {
-                    Text(
-                        text = "No results yet",
-                        style = TextStyle(color = ColorProvider(Color(0xFF888888)), fontSize = 13.sp),
-                        modifier = GlanceModifier.padding(vertical = 8.dp)
-                    )
-                } else {
-                    Column {
-                        items.take(4).forEach { item ->
-                            ResultItemRow(item = item)
+            // ── Results ──────────────────────────────────────────────────────
+            if (items.isEmpty()) {
+                EmptySection()
+            } else {
+                val visibleItems = items.take(4)
+                Column {
+                    visibleItems.forEachIndexed { index, item ->
+                        val accent = WidgetDeptColors.accentFor(item.department)
+                        ResultItem(item, accent)
+                        if (index < visibleItems.lastIndex) {
+                            Spacer(modifier = GlanceModifier.height(4.dp))
                         }
                     }
                 }
@@ -284,49 +250,255 @@ class GlanceServerStatusWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(4.dp))
 
-            // Footer
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = GlanceModifier.fillMaxWidth()
-            ) {
+            // ── Footer ───────────────────────────────────────────────────────
+            Column(modifier = GlanceModifier.fillMaxWidth()) {
                 Text(
                     text = "Sync: $updated",
-                    style = TextStyle(color = ColorProvider(Color(0xFF938F99)), fontSize = 10.sp)
+                    style = TextStyle(
+                        color = ColorProvider(WidgetColors.onSurfaceMuted.copy(alpha = 0.7f)),
+                        fontSize = 9.sp,
+                    ),
+                    maxLines = 1,
                 )
-                Spacer(modifier = GlanceModifier.defaultWeight())
+                Box(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Text(
+                        text = "SPPU Watch",
+                        style = TextStyle(
+                            color = ColorProvider(WidgetColors.onSurfaceMuted.copy(alpha = 0.35f)),
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+
+    // ── HEADER ───────────────────────────────────────────────────────────────
+    @Composable
+    private fun HeaderSection(
+        statusColor: Color,
+        statusLabel: String,
+        time: Long,
+        total: Long,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = GlanceModifier.fillMaxWidth(),
+        ) {
+            // ── App brand badge ──────────────────────────────────────────────
+            Box(
+                modifier = GlanceModifier
+                    .size(44.dp)
+                    .background(ColorProvider(WidgetColors.primary.copy(alpha = 0.15f)))
+                    .cornerRadius(12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    text = "SPPU Result Watch",
-                    style = TextStyle(color = ColorProvider(Color(0xFF938F99).copy(alpha = 0.5f)), fontSize = 9.sp)
+                    text = "S",
+                    style = TextStyle(
+                        color = ColorProvider(WidgetColors.primary),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+
+            Spacer(modifier = GlanceModifier.width(10.dp))
+
+            // ── Status column ────────────────────────────────────────────────
+            Column(modifier = GlanceModifier.defaultWeight()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = GlanceModifier
+                            .size(12.dp)
+                            .background(ColorProvider(statusColor.copy(alpha = 0.25f)))
+                            .cornerRadius(6.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier = GlanceModifier
+                                .size(6.dp)
+                                .background(ColorProvider(statusColor))
+                                .cornerRadius(3.dp),
+                        ) {}
+                    }
+                    Spacer(modifier = GlanceModifier.width(6.dp))
+                    Text(
+                        text = statusLabel,
+                        style = TextStyle(
+                            color = ColorProvider(WidgetColors.onSurface),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        maxLines = 1,
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (time > 0) {
+                        Text(
+                            text = "${time}ms",
+                            style = TextStyle(
+                                color = ColorProvider(WidgetColors.onSurfaceDim),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        )
+                        Text(
+                            text = " \u2022 ",
+                            style = TextStyle(
+                                color = ColorProvider(WidgetColors.onSurfaceMuted),
+                                fontSize = 11.sp,
+                            ),
+                        )
+                    }
+                    Text(
+                        text = if (total == 1L) "1 result" else "$total results",
+                        style = TextStyle(
+                            color = ColorProvider(WidgetColors.onSurfaceDim),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    )
+                }
+            }
+
+            // ── Refresh button ───────────────────────────────────────────────
+            Box(
+                modifier = GlanceModifier
+                    .size(40.dp)
+                    .background(ColorProvider(WidgetColors.surfaceLight.copy(alpha = 0.6f)))
+                    .cornerRadius(11.dp)
+                    .clickable(actionRunCallback<RefreshWidgetCallback>()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "\u21BB",
+                    style = TextStyle(
+                        color = ColorProvider(WidgetColors.onSurface.copy(alpha = 0.8f)),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
                 )
             }
         }
     }
 
+    // ── RESULT ITEM ──────────────────────────────────────────────────────────
     @Composable
-    private fun ResultItemRow(item: WidgetResultItem) {
-        Column(
+    private fun ResultItem(item: WidgetResultItem, accent: Color) {
+        Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .clickable(actionStartActivity<MainActivity>())
-                .padding(vertical = 3.dp)
+                .clickable(actionStartActivity<MainActivity>()),
         ) {
-            Text(
-                text = item.title,
-                maxLines = 1,
-                style = TextStyle(color = ColorProvider(Color.White), fontSize = 12.sp, fontWeight = FontWeight.Medium),
-                modifier = GlanceModifier.fillMaxWidth()
-            )
-            if (item.date.isNotEmpty()) {
+            Box(
+                modifier = GlanceModifier
+                    .width(3.dp)
+                    .height(32.dp)
+                    .background(ColorProvider(accent))
+                    .cornerRadius(1.5.dp),
+            ) {}
+            Spacer(modifier = GlanceModifier.width(10.dp))
+
+            Column {
                 Text(
-                    text = item.date,
-                    style = TextStyle(color = ColorProvider(Color(0xFF938F99)), fontSize = 10.sp),
-                    modifier = GlanceModifier.padding(top = 1.dp)
+                    text = item.title,
+                    style = TextStyle(
+                        color = ColorProvider(WidgetColors.onSurface),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    maxLines = 1,
                 )
+                if (item.date.isNotEmpty()) {
+                    Text(
+                        text = item.date,
+                        style = TextStyle(
+                            color = ColorProvider(WidgetColors.onSurfaceMuted),
+                            fontSize = 10.sp,
+                        ),
+                        maxLines = 1,
+                    )
+                }
+            }
+
+            if (item.department.isNotEmpty()) {
+                Spacer(modifier = GlanceModifier.width(6.dp))
+                Box(
+                    modifier = GlanceModifier
+                        .height(18.dp)
+                        .background(ColorProvider(accent.copy(alpha = 0.15f)))
+                        .cornerRadius(4.dp)
+                        .padding(start = 6.dp, end = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = item.department.take(6),
+                        style = TextStyle(
+                            color = ColorProvider(accent),
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        maxLines = 1,
+                    )
+                }
             }
         }
+    }
+
+    // ── EMPTY ────────────────────────────────────────────────────────────────
+    @Composable
+    private fun EmptySection() {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "\uD83D\uDCCB",
+                style = TextStyle(fontSize = 20.sp),
+            )
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            Text(
+                text = "No results yet",
+                style = TextStyle(
+                    color = ColorProvider(WidgetColors.onSurfaceMuted),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
+            )
+            Text(
+                text = "Tap to open app",
+                style = TextStyle(
+                    color = ColorProvider(WidgetColors.outline),
+                    fontSize = 10.sp,
+                ),
+            )
+        }
+    }
+
+    // ── UTILITIES ────────────────────────────────────────────────────────────
+    private fun statusColor(status: String): Color = when (status) {
+        "HEALTHY" -> WidgetColors.green
+        "SLOW"    -> WidgetColors.yellow
+        "BUSY"    -> WidgetColors.orange
+        else      -> WidgetColors.red
+    }
+
+    private fun statusLabel(status: String): String = when {
+        status == "HEALTHY" -> "Portal Online"
+        status == "DOWN"    -> "Portal Down"
+        status == "SLOW"    -> "Portal Slow"
+        else                -> "Portal Busy"
     }
 }
 
+// ── REFRESH CALLBACK ──────────────────────────────────────────────────────────
 class RefreshWidgetCallback : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         try {
@@ -349,6 +521,7 @@ class RefreshWidgetCallback : ActionCallback {
                     id = result.id,
                     title = result.title,
                     date = result.publishedDate,
+                    department = result.department,
                 )
             }
             val encoded = items.map { it.encode() }.toSet()
@@ -369,6 +542,7 @@ class RefreshWidgetCallback : ActionCallback {
     }
 }
 
+// ── WIDGET RECEIVER ───────────────────────────────────────────────────────────
 class ServerStatusWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = GlanceServerStatusWidget()
 }
