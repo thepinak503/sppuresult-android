@@ -50,7 +50,7 @@ android {
     
     buildFeatures {
         compose = true
-        buildConfig = false // Space saver
+        buildConfig = true
     }
 
     packaging {

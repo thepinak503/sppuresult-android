@@ -21,10 +21,7 @@ class PreferenceManager @Inject constructor(
 
     object PreferencesKeys {
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
-        val RESULT_SYNC_INTERVAL = intPreferencesKey("result_sync_interval_min")
-        val REVAL_SYNC_INTERVAL = intPreferencesKey("reval_sync_interval_min")
-        val EXAM_DATE_SYNC_INTERVAL = intPreferencesKey("exam_date_sync_interval_min")
-        val CIRCULAR_SYNC_INTERVAL = intPreferencesKey("circular_sync_interval_min")
+        val SYNC_INTERVAL = intPreferencesKey("sync_interval_min")
         val WATCHLIST_KEYWORDS = stringSetPreferencesKey("watchlist_keywords")
         val SUBSCRIBED_DEPARTMENTS = stringSetPreferencesKey("subscribed_departments")
         val USER_PROFILES = stringSetPreferencesKey("user_profiles")
@@ -49,10 +46,7 @@ class PreferenceManager @Inject constructor(
 
         UserPreferences(
             notificationsEnabled = preferences[PreferencesKeys.NOTIFICATIONS_ENABLED] ?: true,
-            resultSyncInterval = preferences[PreferencesKeys.RESULT_SYNC_INTERVAL] ?: 15,
-            revalSyncInterval = preferences[PreferencesKeys.REVAL_SYNC_INTERVAL] ?: 60,
-            examDateSyncInterval = preferences[PreferencesKeys.EXAM_DATE_SYNC_INTERVAL] ?: 180,
-            circularSyncInterval = preferences[PreferencesKeys.CIRCULAR_SYNC_INTERVAL] ?: 240,
+            syncInterval = preferences[PreferencesKeys.SYNC_INTERVAL] ?: 30,
             watchlistKeywords = preferences[PreferencesKeys.WATCHLIST_KEYWORDS] ?: emptySet(),
             subscribedDepartments = preferences[PreferencesKeys.SUBSCRIBED_DEPARTMENTS] ?: emptySet(),
             profiles = profiles,
@@ -102,27 +96,9 @@ class PreferenceManager @Inject constructor(
         }
     }
 
-    suspend fun updateResultSyncInterval(intervalMinutes: Int) {
+    suspend fun updateSyncInterval(intervalMinutes: Int) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.RESULT_SYNC_INTERVAL] = intervalMinutes
-        }
-    }
-
-    suspend fun updateRevalSyncInterval(intervalMinutes: Int) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.REVAL_SYNC_INTERVAL] = intervalMinutes
-        }
-    }
-
-    suspend fun updateExamDateSyncInterval(intervalMinutes: Int) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.EXAM_DATE_SYNC_INTERVAL] = intervalMinutes
-        }
-    }
-
-    suspend fun updateCircularSyncInterval(intervalMinutes: Int) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.CIRCULAR_SYNC_INTERVAL] = intervalMinutes
+            preferences[PreferencesKeys.SYNC_INTERVAL] = intervalMinutes
         }
     }
 
@@ -271,10 +247,7 @@ class PreferenceManager @Inject constructor(
 
 data class UserPreferences(
     val notificationsEnabled: Boolean,
-    val resultSyncInterval: Int,
-    val revalSyncInterval: Int,
-    val examDateSyncInterval: Int,
-    val circularSyncInterval: Int,
+    val syncInterval: Int,
     val watchlistKeywords: Set<String>,
     val subscribedDepartments: Set<String>,
     val profiles: List<UserProfile>,

@@ -35,7 +35,7 @@ class SettingsViewModel @Inject constructor(
     val userPreferences: StateFlow<UserPreferences> = preferenceManager.preferencesFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = UserPreferences(true, 15, 60, 180, 240, emptySet(), emptySet(), emptyList(), null)
+        initialValue = UserPreferences(true, 30, emptySet(), emptySet(), emptyList(), null)
     )
 
     fun syncAll() {
@@ -54,27 +54,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateResultSyncInterval(minutes: Int) {
+    fun updateSyncInterval(minutes: Int) {
         viewModelScope.launch {
-            preferenceManager.updateResultSyncInterval(minutes)
-        }
-    }
-
-    fun updateRevalSyncInterval(minutes: Int) {
-        viewModelScope.launch {
-            preferenceManager.updateRevalSyncInterval(minutes)
-        }
-    }
-
-    fun updateExamDateSyncInterval(minutes: Int) {
-        viewModelScope.launch {
-            preferenceManager.updateExamDateSyncInterval(minutes)
-        }
-    }
-
-    fun updateCircularSyncInterval(minutes: Int) {
-        viewModelScope.launch {
-            preferenceManager.updateCircularSyncInterval(minutes)
+            preferenceManager.updateSyncInterval(minutes)
         }
     }
 

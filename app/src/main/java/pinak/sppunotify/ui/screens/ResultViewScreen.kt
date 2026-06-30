@@ -12,16 +12,20 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -184,6 +188,32 @@ fun ResultViewScreen(
 
                 HorizontalDivider()
 
+                if (state.profiles.isNotEmpty()) {
+                    Text(
+                        "Quick Fill from Profile:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 8.dp)
+                    ) {
+                        items(state.profiles) { profile ->
+                            val isSelected = state.activeProfileName == profile.name
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.switchProfile(profile) },
+                                label = { Text(profile.name) },
+                                leadingIcon = if (isSelected) {
+                                    { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                } else null,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = state.seatNo,
                     onValueChange = { viewModel.updateSeatNo(it) },
@@ -194,6 +224,7 @@ fun ResultViewScreen(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
                     ),
+                    leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) }
                 )
 
                 OutlinedTextField(

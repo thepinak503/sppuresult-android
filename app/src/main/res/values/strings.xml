@@ -133,7 +133,7 @@
 
     <string name="legal_full_title">Show full legal disclaimer</string>
     <string name="legal_4_title">4. Limitation of Liability\n</string>
-    <string name="legal_4_desc">• Any direct, indirect, incidental, or consequential damages\n• Result discrepancies or errors in displayed information\n• Server downtime or network connectivity issues\n• Unauthorized access or data interception (while connections use HTTPS, no system is 100% secure)\n• Decisions made based on information from this app\n\n</string>
+    <string name="legal_4_desc">• Any direct, indirect, incidental, or consequential damages\n• Result discrepancies or errors in displayed information\n• Server downtime or network connectivity issues\n• Unauthorized access or data interception (while connections use HTTPS, no system is 100%% secure)\n• Decisions made based on information from this app\n\n</string>
     <string name="legal_5_title">5. External Links\n</string>
     <string name="legal_5_desc">This app may display or link to external SPPU portal URLs. The developer does not control and is not responsible for:\n• The content of external websites\n• Changes to external websites\n• Availability of external resources\n• Privacy practices of external websites\n\n</string>
     <string name="legal_6_title">6. No Warranty\n</string>

@@ -25,27 +25,28 @@ class WorkManagerHelper @Inject constructor(
 
     fun updateSyncWork(preferences: UserPreferences) {
         if (preferences.notificationsEnabled) {
-            // Schedule per-screen based on individual toggles
+            val interval = preferences.syncInterval
+            // Schedule per-screen based on individual toggles using global interval
             if (preferences.syncResultsEnabled) {
-                scheduleResultSync(preferences.resultSyncInterval)
+                scheduleResultSync(interval)
             } else {
                 workManager.cancelUniqueWork(RESULT_SYNC_WORK_NAME)
             }
             
             if (preferences.syncRevalEnabled) {
-                scheduleRevalSync(preferences.revalSyncInterval)
+                scheduleRevalSync(interval)
             } else {
                 workManager.cancelUniqueWork(REVAL_SYNC_WORK_NAME)
             }
             
             if (preferences.syncExamDatesEnabled) {
-                scheduleExamDateSync(preferences.examDateSyncInterval)
+                scheduleExamDateSync(interval)
             } else {
                 workManager.cancelUniqueWork(EXAM_DATE_SYNC_WORK_NAME)
             }
 
             if (preferences.syncCircularsEnabled) {
-                scheduleCircularSync(preferences.circularSyncInterval)
+                scheduleCircularSync(interval)
             } else {
                 workManager.cancelUniqueWork(CIRCULAR_SYNC_WORK_NAME)
             }

@@ -30,7 +30,8 @@ data class ResultViewState(
     val seatNo: String = "",
     val motherName: String = "",
     val captchaText: String = "",
-    val activeProfileName: String = "Default"
+    val activeProfileName: String = "Default",
+    val profiles: List<pinak.sppunotify.data.local.UserProfile> = emptyList()
 )
 
 sealed class ResultViewEvent {
@@ -63,14 +64,24 @@ class ResultViewViewModel @Inject constructor(
 
     private fun loadPreferences() {
         viewModelScope.launch {
-            val prefs = preferenceManager.preferencesFlow.first()
-            val activeProfile = prefs.profiles.find { it.id == prefs.activeProfileId }
-            _state.value = _state.value.copy(
-                seatNo = activeProfile?.seatNo ?: "",
-                motherName = activeProfile?.motherName ?: "",
-                activeProfileName = activeProfile?.name ?: "Default"
-            )
+            preferenceManager.preferencesFlow.collectLatest { prefs ->
+                val activeProfile = prefs.profiles.find { it.id == prefs.activeProfileId }
+                _state.value = _state.value.copy(
+                    seatNo = activeProfile?.seatNo ?: _state.value.seatNo,
+                    motherName = activeProfile?.motherName ?: _state.value.motherName,
+                    activeProfileName = activeProfile?.name ?: "Default",
+                    profiles = prefs.profiles
+                )
+            }
         }
+    }
+
+    fun switchProfile(profile: pinak.sppunotify.data.local.UserProfile) {
+        _state.value = _state.value.copy(
+            seatNo = profile.seatNo,
+            motherName = profile.motherName,
+            activeProfileName = profile.name
+        )
     }
 
     fun updateSeatNo(value: String) { _state.value = _state.value.copy(seatNo = value) }

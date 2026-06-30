@@ -251,38 +251,11 @@ fun SettingsScreen(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         Spacer(Modifier.height(16.dp))
                         
-                        // Result Sync Interval
+                        // Global Sync Interval
                         SyncIntervalInput(
-                            label = "Result Sync Interval (minutes)",
-                            value = userPreferences.resultSyncInterval,
-                            onValueChange = { interval -> viewModel.updateResultSyncInterval(interval) }
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-                        
-                        // Revaluation Sync Interval
-                        SyncIntervalInput(
-                            label = "Revaluation Sync Interval (minutes)",
-                            value = userPreferences.revalSyncInterval,
-                            onValueChange = { interval -> viewModel.updateRevalSyncInterval(interval) }
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        // Exam Dates Sync Interval
-                        SyncIntervalInput(
-                            label = "Exam Dates Sync Interval (minutes)",
-                            value = userPreferences.examDateSyncInterval,
-                            onValueChange = { interval -> viewModel.updateExamDateSyncInterval(interval) }
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        // Circulars Sync Interval
-                        SyncIntervalInput(
-                            label = "Circulars Sync Interval (minutes)",
-                            value = userPreferences.circularSyncInterval,
-                            onValueChange = { interval -> viewModel.updateCircularSyncInterval(interval) }
+                            label = "Background Sync Frequency (minutes)",
+                            value = userPreferences.syncInterval,
+                            onValueChange = { interval -> viewModel.updateSyncInterval(interval) }
                         )
 
                         Spacer(Modifier.height(12.dp))

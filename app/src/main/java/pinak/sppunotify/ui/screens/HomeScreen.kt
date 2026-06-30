@@ -33,7 +33,15 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Architecture
+import androidx.compose.material.icons.filled.Balance
+import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Engineering
+import androidx.compose.material.icons.filled.HistoryEdu
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -174,65 +182,8 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            if (!searchActive) {
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    AnimatedVisibility(
-                        visible = fabExpanded,
-                        enter = fadeIn(spring()) + slideInVertically { it / 2 },
-                        exit = fadeOut(spring()) + slideOutVertically { it / 2 }
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.End,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            MiniFabItem(
-                                icon = Icons.Default.CloudSync,
-                                label = stringResource(R.string.check_status),
-                                onClick = {
-                                    viewModel.checkServerStatus()
-                                    fabExpanded = false
-                                }
-                            )
-                            MiniFabItem(
-                                icon = Icons.Default.Refresh,
-                                label = stringResource(R.string.refresh),
-                                onClick = {
-                                    viewModel.refresh()
-                                    fabExpanded = false
-                                }
-                            )
-                            MiniFabItem(
-                                icon = Icons.AutoMirrored.Filled.Sort,
-                                label = "Sort",
-                                onClick = {
-                                    fabExpanded = false
-                                    showSortMenu = true
-                                }
-                            )
-                        }
-                    }
-
-                    FloatingActionButton(
-                        onClick = { fabExpanded = !fabExpanded },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        shape = CircleShape,
-                        elevation = FloatingActionButtonDefaults.elevation(
-                            defaultElevation = 6.dp,
-                            pressedElevation = 12.dp
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = if (fabExpanded) "Close quick actions" else "More actions",
-                            modifier = Modifier.graphicsLayer { rotationZ = fabRotation }
-                        )
-                    }
-                }
-            }
+            // FAB removed as per user request to reduce redundancy. 
+            // Pull-to-refresh and TopBar refresh are sufficient.
         }
     ) { padding ->
         if (showSortMenu) {
@@ -643,6 +594,21 @@ private fun QuickStatsRow(
     }
 }
 
+@Composable
+private fun getDeptIcon(department: String): ImageVector {
+    return when {
+        department.contains("Engineering", ignoreCase = true) -> Icons.Default.Engineering
+        department.contains("Pharmacy", ignoreCase = true) -> Icons.Default.MedicalServices
+        department.contains("Science", ignoreCase = true) -> Icons.Default.Science
+        department.contains("MBA", ignoreCase = true) || department.contains("Management", ignoreCase = true) -> Icons.Default.BusinessCenter
+        department.contains("Law", ignoreCase = true) -> Icons.Default.Balance
+        department.contains("Arts", ignoreCase = true) -> Icons.Default.HistoryEdu
+        department.contains("Commerce", ignoreCase = true) -> Icons.Default.Payments
+        department.contains("Architecture", ignoreCase = true) -> Icons.Default.Architecture
+        else -> Icons.Default.School
+    }
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ResultCard(
@@ -661,6 +627,7 @@ fun ResultCard(
         highlightText(result.title, searchQuery)
     }
     val deptColor = remember(result.department) { DeptColors.accentFor(result.department) }
+    val deptIcon = getDeptIcon(result.department)
 
     var isPressed by remember { mutableStateOf(value = false) }
     var showContextMenu by remember { mutableStateOf(false) }
@@ -710,19 +677,27 @@ fun ResultCard(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Box(
                         modifier = Modifier
-                            .width(4.dp)
+                            .width(60.dp)
                             .fillMaxHeight()
                             .background(
                                 brush = Brush.verticalGradient(
                                     colors = listOf(
                                         deptColor,
-                                        deptColor.copy(alpha = 0.3f)
+                                        deptColor.copy(alpha = 0.6f)
                                     )
                                 ),
                                 shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)
                             )
-                            .align(Alignment.CenterVertically)
-                    )
+                            .align(Alignment.CenterVertically),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = deptIcon,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                     Column(
                         modifier = Modifier
                             .weight(1f)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -362,7 +363,58 @@ fun ResultDetailsScreen(
                                 )
                                 Spacer(Modifier.width(10.dp))
                                 Text("Open in Browser", style = MaterialTheme.typography.titleMedium)
-                            }                  }
+                            }
+
+                            if (viewModel != null) {
+                                val stats by viewModel.departmentStats.collectAsState()
+                                if (stats.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(32.dp))
+                                    Text(
+                                        "Result Frequency: ${result.department}",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    ResultFrequencyChart(stats)
+                                }
+                            }
+                        }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultFrequencyChart(stats: Map<String, Int>) {
+    val maxCount = stats.values.maxOrNull() ?: 1
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            stats.entries.sortedBy { it.key }.forEach { (year, count) ->
+                val progress = count.toFloat() / maxCount
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(year, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        Text("$count results", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(CircleShape),
+                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                    )
                 }
             }
         }
