@@ -51,7 +51,7 @@ Single-module Android app (`:app`). Package `pinak.sppunotify`.
 - Gradle 9.4.1
 - Min SDK 23, Target/Compile SDK 37 (Android 16 support)
 
-## Recent Changes (v1.5.0 - Planned)
+## Recent Changes (v1.5.0)
 - **UI Redesign**: 
   - Enhanced Result Cards with departmental icons (Engineering, Pharmacy, etc.) for better scannability.
   - Added "Result Frequency" chart in details view to track publication trends.

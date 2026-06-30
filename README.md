@@ -3,7 +3,7 @@
 **Free and Open Source (FOSS) Android application for students of Savitribai Phule Pune University (SPPU)**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/thepinak503/sppuresult-android)
-![Version](https://img.shields.io/badge/version-1.4.0-blue)
+![Version](https://img.shields.io/badge/version-1.5.0-blue)
 
 ---
 

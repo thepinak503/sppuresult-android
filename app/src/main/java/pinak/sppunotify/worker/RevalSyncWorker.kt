@@ -71,12 +71,12 @@ class RevalSyncWorker @AssistedInject constructor(
 
     private suspend fun rescheduleIfNeeded() {
         val prefs = preferenceManager.preferencesFlow.first()
-        if (prefs.notificationsEnabled && prefs.revalSyncInterval < 15) {
+        if (prefs.notificationsEnabled && prefs.syncInterval < 15) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
             val request = OneTimeWorkRequestBuilder<RevalSyncWorker>()
-                .setInitialDelay(prefs.revalSyncInterval.toLong(), TimeUnit.MINUTES)
+                .setInitialDelay(prefs.syncInterval.toLong(), TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .build()
             WorkManager.getInstance(applicationContext).enqueueUniqueWork(

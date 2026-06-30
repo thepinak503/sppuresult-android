@@ -183,7 +183,7 @@ fun MainScreen() {
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                "v1.4.0",
+                                "v${pinak.sppunotify.BuildConfig.VERSION_NAME}",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,

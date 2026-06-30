@@ -103,7 +103,7 @@ class SyncDashboardViewModel @Inject constructor(
                 "results" -> {
                     _state.value = _state.value.copy(resultRunning = true)
                     val prefs = preferenceManager.preferencesFlow.first()
-                    workManagerHelper.updateSyncWork(prefs.copy(syncResultsEnabled = true, resultSyncInterval = 15))
+                    workManagerHelper.updateSyncWork(prefs.copy(syncResultsEnabled = true, syncInterval = 15))
                     delay(1200)
                     _state.value = _state.value.copy(
                         resultRunning = false,
@@ -114,7 +114,7 @@ class SyncDashboardViewModel @Inject constructor(
                 "reval" -> {
                     _state.value = _state.value.copy(revalRunning = true)
                     val prefs = preferenceManager.preferencesFlow.first()
-                    workManagerHelper.updateSyncWork(prefs.copy(syncRevalEnabled = true, revalSyncInterval = 15))
+                    workManagerHelper.updateSyncWork(prefs.copy(syncRevalEnabled = true, syncInterval = 15))
                     delay(1200)
                     _state.value = _state.value.copy(
                         revalRunning = false,
@@ -125,7 +125,7 @@ class SyncDashboardViewModel @Inject constructor(
                 "examDates" -> {
                     _state.value = _state.value.copy(examDatesRunning = true)
                     val prefs = preferenceManager.preferencesFlow.first()
-                    workManagerHelper.updateSyncWork(prefs.copy(syncExamDatesEnabled = true, examDateSyncInterval = 15))
+                    workManagerHelper.updateSyncWork(prefs.copy(syncExamDatesEnabled = true, syncInterval = 15))
                     delay(1200)
                     _state.value = _state.value.copy(
                         examDatesRunning = false,
@@ -136,7 +136,7 @@ class SyncDashboardViewModel @Inject constructor(
                 "circulars" -> {
                     _state.value = _state.value.copy(circularsRunning = true)
                     val prefs = preferenceManager.preferencesFlow.first()
-                    workManagerHelper.updateSyncWork(prefs.copy(syncCircularsEnabled = true, circularSyncInterval = 15))
+                    workManagerHelper.updateSyncWork(prefs.copy(syncCircularsEnabled = true, syncInterval = 15))
                     delay(1200)
                     _state.value = _state.value.copy(
                         circularsRunning = false,

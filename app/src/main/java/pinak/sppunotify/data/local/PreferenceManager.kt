@@ -238,7 +238,7 @@ class PreferenceManager @Inject constructor(
             preferences[PreferencesKeys.SUBSCRIBED_DEPARTMENTS] = backup.subscribedDepartments
             preferences[PreferencesKeys.PRIORITY_KEYWORDS] = backup.priorityKeywords
             
-            if (preferences[PreferencesKeys.ACTIVE_PROFILE_ID] == null && backup.profiles.isNotEmpty()) {
+            if ((preferences[PreferencesKeys.ACTIVE_PROFILE_ID] == null) && backup.profiles.isNotEmpty()) {
                 preferences[PreferencesKeys.ACTIVE_PROFILE_ID] = backup.profiles.first().id
             }
         }
