@@ -9,7 +9,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -22,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Image
@@ -238,64 +238,96 @@ fun ResultViewScreen(
                     ),
                 )
 
-                if (state.captchaBitmap != null) {
+                // ── Captcha Section ─────────────────────────────────────────
+                if (state.captchaBitmap != null || state.isLoadingCaptcha) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
+                        )
                     ) {
                         Column(
                             modifier = Modifier.padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Text(
-                                "Security Verification",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Image(
-                                bitmap = state.captchaBitmap!!.asImageBitmap(),
-                                contentDescription = "Captcha",
-                                modifier = Modifier
-                                    .height(70.dp)
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp)),
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            TextButton(
-                                onClick = { viewModel.loadCaptcha() },
-                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Refresh,
+                                    Icons.Default.Security,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                                Spacer(Modifier.width(8.dp))
-                                Text("Try a different captcha", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Security Verification",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (state.isLoadingCaptcha) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(70.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(36.dp),
+                                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        strokeWidth = 4.dp
+                                    )
+                                }
+                            } else if (state.captchaBitmap != null) {
+                                Image(
+                                    bitmap = state.captchaBitmap!!.asImageBitmap(),
+                                    contentDescription = "Security captcha image",
+                                    modifier = Modifier
+                                        .height(72.dp)
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp)),
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            FilledTonalButton(
+                                onClick = { viewModel.loadCaptcha() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                enabled = !state.isLoadingCaptcha
+                            ) {
+                                if (state.isLoadingCaptcha) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        strokeWidth = 2.dp,
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                } else {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                }
+                                Text(
+                                    if (state.captchaBitmap != null) "⟳ Refresh Captcha" else "Load Captcha",
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
-                    }
-                } else if (state.isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(42.dp),
-                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            strokeWidth = 4.dp
-                        )
                     }
                 }
 

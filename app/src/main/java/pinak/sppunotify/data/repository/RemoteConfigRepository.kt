@@ -22,7 +22,9 @@ class RemoteConfigRepository @Inject constructor(
         val id: String,
         val title: String,
         val message: String,
-        val type: String // FEATURE, ANNOUNCEMENT, ALERT
+        val type: String, // FEATURE, ANNOUNCEMENT, ALERT
+        val actionUrl: String? = null,
+        val actionLabel: String? = null
     )
 
     data class AppConfig(
@@ -47,7 +49,9 @@ class RemoteConfigRepository @Inject constructor(
                     id = it.optString("id"),
                     title = it.optString("title"),
                     message = it.optString("message"),
-                    type = it.optString("type", "ANNOUNCEMENT")
+                    type = it.optString("type", "ANNOUNCEMENT"),
+                    actionUrl = it.optString("action_url").takeIf { url -> url.isNotBlank() },
+                    actionLabel = it.optString("action_label").takeIf { label -> label.isNotBlank() }
                 )
             }
             

@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Engineering
 import androidx.compose.material.icons.filled.HistoryEdu
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.*
@@ -177,6 +178,30 @@ fun HomeScreen(
                             contentDescription = "Refresh",
                             modifier = Modifier.graphicsLayer { rotationZ = rotation }
                         )
+                    }
+                    Box {
+                        var showMoreMenu by remember { mutableStateOf(false) }
+                        IconButton(onClick = { showMoreMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More options",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false },
+                            shape = RoundedCornerShape(16.dp),
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Clear Cache & Hard Reload", fontWeight = FontWeight.Medium) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    viewModel.hardRefresh()
+                                },
+                                leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp)) }
+                            )
+                        }
                     }
                 },
             )
@@ -387,7 +412,9 @@ fun HomeScreen(
                             totalCount = totalCount,
                             serverStatus = serverStatus,
                             sortOrder = sortOrder,
-                            lastUpdated = lastUpdated
+                            lastUpdated = lastUpdated,
+                            bookmarkCount = viewModel.bookmarkCount.collectAsState().value,
+                            onBookmarksClick = { viewModel.toggleShowBookmarks() }
                         )
                     }
                 }
@@ -495,6 +522,179 @@ fun HomeScreen(
                 shape = RoundedCornerShape(24.dp),
             )
         }
+
+        // ── Bookmarks Bottom Sheet ────────────────────────────────────────────
+        val showBookmarks by viewModel.showBookmarks.collectAsState()
+        val bookmarkedResults by viewModel.bookmarkedResults.collectAsState()
+
+        if (showBookmarks) {
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.dismissBookmarks() },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                dragHandle = { BottomSheetDefaults.DragHandle() },
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 48.dp)
+                ) {
+                    // ── Header ───────────────────────────────────────────────
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = "Bookmarks",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                "Saved Bookmarks",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFFFB300).copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = "${bookmarkedResults.size}",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFFB300)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        thickness = 0.5.dp
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    if (bookmarkedResults.isEmpty()) {
+                        // Empty bookmarks state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Filled.StarBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                                )
+                                Spacer(Modifier.height(12.dp))
+                                Text(
+                                    "No bookmarks yet",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "Tap the star icon on any result to save it here",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight(0.85f),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(
+                                items = bookmarkedResults,
+                                key = { it.id }
+                            ) { result ->
+                                val deptColor = DeptColors.accentFor(result.department)
+                                val deptIcon = getDeptIcon(result.department)
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.dismissBookmarks()
+                                            onResultClick(result)
+                                        },
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(8.dp)
+                                                .height(56.dp)
+                                                .background(deptColor),
+                                            contentAlignment = Alignment.Center
+                                        ) {}
+                                        Spacer(Modifier.width(12.dp))
+                                        Icon(
+                                            imageVector = deptIcon,
+                                            contentDescription = null,
+                                            tint = deptColor,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = result.title,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = result.publishedDate,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.outline
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = { viewModel.toggleBookmark(result.id) },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.Star,
+                                                contentDescription = "Remove bookmark",
+                                                tint = Color(0xFFFFB300),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -536,7 +736,9 @@ private fun QuickStatsRow(
     totalCount: Int,
     serverStatus: ServerStatus?,
     sortOrder: SortOrder,
-    lastUpdated: String
+    lastUpdated: String,
+    bookmarkCount: Int = 0,
+    onBookmarksClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -545,30 +747,60 @@ private fun QuickStatsRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-            tonalElevation = 0.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                tonalElevation = 0.dp
             ) {
-                Icon(
-                    imageVector = Icons.Default.School,
-                    contentDescription = "Results count",
-                    modifier = Modifier.size(13.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.results_count, totalCount),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.School,
+                        contentDescription = "Results count",
+                        modifier = Modifier.size(13.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.results_count, totalCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            // Bookmark chip — always visible so users can discover the feature
+            Surface(
+                shape = CircleShape,
+                color = if (bookmarkCount > 0) Color(0xFFFFB300).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                tonalElevation = 0.dp,
+                modifier = Modifier.clickable(onClick = onBookmarksClick)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = if (bookmarkCount > 0) Icons.Filled.Star else Icons.Filled.StarBorder,
+                        contentDescription = "Bookmarks",
+                        modifier = Modifier.size(13.dp),
+                        tint = if (bookmarkCount > 0) Color(0xFFFFB300) else MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        text = if (bookmarkCount > 0) "$bookmarkCount" else "0",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (bookmarkCount > 0) Color(0xFFFFB300) else MaterialTheme.colorScheme.outline
+                    )
+                }
             }
         }
+
         Column(horizontalAlignment = Alignment.End) {
             Surface(
                 shape = RoundedCornerShape(8.dp),

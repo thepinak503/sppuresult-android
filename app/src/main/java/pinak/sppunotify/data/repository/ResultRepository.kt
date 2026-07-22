@@ -13,6 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 
 @Singleton
 class ResultRepository @Inject constructor(
@@ -22,6 +23,11 @@ class ResultRepository @Inject constructor(
 ) {
     // Expose local database flow for offline-first support
     val results: Flow<List<ResultEntity>> = db.dao.getAllResults()
+
+    data class SyncResult(
+        val newResults: List<ResultDto> = emptyList(),
+        val removedResults: List<ResultEntity> = emptyList()
+    )
 
     /**
      * Scrapes results from the SPPU website and saves them to the local database.
@@ -37,7 +43,29 @@ class ResultRepository @Inject constructor(
         preferenceManager.updateWasServerDown(!status.isOnline)
     }
 
-    suspend fun fetchResults(): List<ResultDto> = withContext(Dispatchers.IO) {
+    suspend fun hardRefresh(): SyncResult = withContext(Dispatchers.IO) {
+        // Save bookmarked & viewed IDs before clearing
+        val bookmarkedIds = db.dao.getBookmarkedIds()
+        val viewedIds = db.dao.getAllResults().first()
+            .filter { it.isViewed }
+            .map { it.id }
+        
+        db.dao.clearAll()
+        
+        val syncResult = fetchResults()
+        
+        // Restore bookmarks & viewed status on matching new results
+        if (bookmarkedIds.isNotEmpty()) {
+            db.dao.restoreBookmarks(bookmarkedIds)
+        }
+        if (viewedIds.isNotEmpty()) {
+            db.dao.restoreViewed(viewedIds)
+        }
+        
+        syncResult
+    }
+
+    suspend fun fetchResults(): SyncResult = withContext(Dispatchers.IO) {
         // Auto-cleanup: remove results older than 6 months
         val sixMonthsAgo = System.currentTimeMillis() - (180L * 24 * 60 * 60 * 1000)
         db.dao.deleteOldResults(sixMonthsAgo)
@@ -49,11 +77,20 @@ class ResultRepository @Inject constructor(
         val newResults = scrapedResults.filter { it.id !in existingIds }.map {
             it.copy(department = DepartmentClassifier.classify(it.title))
         }
+
+        // Detect removed results: in DB but not in scraped list
+        val scrapedIds = scrapedResults.map { it.id }.toSet()
+        val removedResults = if (scrapedResults.isNotEmpty()) {
+             // Only detect removals if we actually got a successful scrape
+             // This avoids false "removed" alerts if the scrape partially failed
+             val allResults = db.dao.getAllResults().first()
+             allResults.filter { it.id !in scrapedIds }
+        } else emptyList()
         
         val entities = scrapedResults.map { it.toEntity() }
         db.dao.insertResults(entities)
         
-        newResults
+        SyncResult(newResults, removedResults)
     }
 
     suspend fun getCachedCount(): Int = withContext(Dispatchers.IO) {

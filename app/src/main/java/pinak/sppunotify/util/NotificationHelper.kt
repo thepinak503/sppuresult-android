@@ -330,6 +330,36 @@ class NotificationHelper(
         trackNotification("CIRCULAR", "New University Circulars", "$count circular(s)")
     }
 
+    // ── Removed Results → notifies when results are deleted from SPPU ─────────
+
+    fun showResultRemovedNotification(removedTitles: List<String>) {
+        if (removedTitles.isEmpty()) return
+        
+        val pendingIntent = createDeepLinkPendingIntent("home")
+        
+        val title = if (removedTitles.size == 1) "Result Removed from SPPU" else "${removedTitles.size} Results Removed from SPPU"
+        val message = if (removedTitles.size == 1) {
+            removedTitles.first()
+        } else {
+            removedTitles.joinToString("\n") { "• $it" }
+        }
+        
+        val expandedText = "The following result(s) are no longer available on the SPPU portal:\n\n$message"
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_NEWS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(if (removedTitles.size == 1) removedTitles.first() else "Tap to see which results were removed")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .build()
+        notificationManager.notify(REMOVED_RESULT_NOTIFICATION_ID, notification)
+        trackNotification("REMOVED", title, message)
+    }
+
     // ── Updates ──────────────────────────────────────────────────────────────
 
     fun showUpdateNotification(versionName: String, updateUrl: String) {
@@ -390,5 +420,6 @@ class NotificationHelper(
         const val UPDATE_NOTIFICATION_ID = 104
         const val NEWS_NOTIFICATION_ID = 102
         const val RESULT_BASE_ID = 1000
+        const val REMOVED_RESULT_NOTIFICATION_ID = 105
     }
 }

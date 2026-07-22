@@ -69,6 +69,20 @@ class ExamDatesViewModel @Inject constructor(
         }
     }
 
+    fun hardRefresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                repository.hardRefresh()
+            } catch (e: Exception) {
+                // Handle error
+            } finally {
+                _isRefreshing.value = false
+                checkServerStatus()
+            }
+        }
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true

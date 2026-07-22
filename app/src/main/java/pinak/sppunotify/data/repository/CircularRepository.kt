@@ -50,7 +50,14 @@ class CircularRepository @Inject constructor(
         }
     }
 
-    suspend fun fetchAllCirculars(): List<CircularRssItem> = withContext(Dispatchers.IO) {
+    suspend fun fetchAllCirculars(): List<CircularRssItem> = fetchAllCircularsInternal()
+
+    suspend fun hardRefresh(): List<CircularRssItem> = withContext(Dispatchers.IO) {
+        dao.clearAll()
+        fetchAllCircularsInternal()
+    }
+
+    private suspend fun fetchAllCircularsInternal(): List<CircularRssItem> = withContext(Dispatchers.IO) {
         val items = coroutineScope {
             feeds.mapIndexed { index, url ->
                 val sourceName = when (index) {

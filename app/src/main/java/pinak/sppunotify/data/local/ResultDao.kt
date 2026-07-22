@@ -40,4 +40,13 @@ interface ResultDao {
 
     @Query("SELECT isBookmarked FROM results WHERE id = :resultId")
     suspend fun isBookmarked(resultId: String): Boolean?
+
+    @Query("SELECT id FROM results WHERE isBookmarked = 1")
+    suspend fun getBookmarkedIds(): List<String>
+
+    @Query("UPDATE results SET isBookmarked = 1 WHERE id IN (:ids)")
+    suspend fun restoreBookmarks(ids: List<String>)
+
+    @Query("UPDATE results SET isViewed = 1 WHERE id IN (:ids)")
+    suspend fun restoreViewed(ids: List<String>)
 }

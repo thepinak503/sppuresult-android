@@ -150,6 +150,23 @@ class RevaluationViewModel @Inject constructor(
         _searchResultHtml.value = null
     }
 
+    fun hardRefresh() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMsg.value = ""
+            try {
+                val fresh = repository.hardRefresh()
+                _courses.value = fresh
+                _uiEvent.send(UiEvent.ShowSnackbar("🗑️ Cache cleared. Reloaded ${fresh.size} courses."))
+            } catch (e: Exception) {
+                _errorMsg.value = e.message ?: "Hard refresh failed"
+                _uiEvent.send(UiEvent.ShowSnackbar("Hard refresh failed: ${e.message}"))
+            }
+            _isLoading.value = false
+            checkServerStatus()
+        }
+    }
+
     fun loadCourses() {
         viewModelScope.launch {
             _isLoading.value = true

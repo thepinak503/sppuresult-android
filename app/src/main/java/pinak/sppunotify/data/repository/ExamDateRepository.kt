@@ -28,7 +28,14 @@ class ExamDateRepository @Inject constructor(
         _serverStatus.value = status
     }
 
-    suspend fun refreshExamDates(): List<ExamDateDto> = withContext(Dispatchers.IO) {
+    suspend fun hardRefresh(): List<ExamDateDto> = withContext(Dispatchers.IO) {
+        dao.clearAll()
+        refreshExamDatesInternal()
+    }
+
+    suspend fun refreshExamDates(): List<ExamDateDto> = refreshExamDatesInternal()
+
+    private suspend fun refreshExamDatesInternal(): List<ExamDateDto> = withContext(Dispatchers.IO) {
         val dtos = scraper.scrapeExamDates()
         
         val existingNames = dao.getAllCourseNames().toSet()

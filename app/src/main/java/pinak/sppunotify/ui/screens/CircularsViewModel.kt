@@ -49,6 +49,19 @@ class CircularsViewModel @Inject constructor(
         _searchQuery.value = query
     }
 
+    fun hardRefresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            _errorMsg.value = ""
+            try {
+                repository.hardRefresh()
+            } catch (e: Exception) {
+                _errorMsg.value = "Hard refresh failed: ${e.message}"
+            }
+            _isRefreshing.value = false
+        }
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true

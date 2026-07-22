@@ -8,9 +8,11 @@
     android:minResizeWidth="200dp"
     android:minResizeHeight="80dp"
     android:maxResizeWidth="600dp"
-    android:maxResizeHeight="400dp"
+    android:maxResizeHeight="480dp"
     android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable"
     android:description="@string/widget_description"
     android:targetCellWidth="4"
-    android:targetCellHeight="2">
+    android:targetCellHeight="2"
+    android:previewLayout="@layout/widget_server_status">
 </appwidget-provider>

@@ -78,6 +78,11 @@ import pinak.sppunotify.ui.MainScreen
 import pinak.sppunotify.util.LocaleHelper
 import pinak.sppunotify.ui.theme.SPPUResultWatchTheme
 import pinak.sppunotify.ui.theme.ThemeMode
+import pinak.sppunotify.data.repository.RemoteConfigRepository
+import pinak.sppunotify.util.AnnouncementManager
+import pinak.sppunotify.util.safeStartActivity
+import pinak.sppunotify.ui.components.BigAnnouncementBottomSheet
+import android.net.Uri
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -85,6 +90,12 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var preferenceManager: PreferenceManager
+
+    @Inject
+    lateinit var remoteConfigRepository: RemoteConfigRepository
+
+    @Inject
+    lateinit var announcementManager: AnnouncementManager
 
     /** Reference set by MainScreen composable for handling deep links */
     private var navController: NavHostController? = null
@@ -172,6 +183,19 @@ class MainActivity : AppCompatActivity() {
         }
         var showPermissionDialog by remember { mutableStateOf(false) }
 
+        var announcementToShow by remember { mutableStateOf<RemoteConfigRepository.Announcement?>(null) }
+
+        LaunchedEffect(isOnline) {
+            if (isOnline) {
+                val config = remoteConfigRepository.fetchAppConfig()
+                config?.announcement?.let { announcement ->
+                    if (announcementManager.shouldShowAnnouncement(announcement)) {
+                        announcementToShow = announcement
+                    }
+                }
+            }
+        }
+
         if (prefs == null) {
             Box(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
@@ -248,6 +272,25 @@ class MainActivity : AppCompatActivity() {
                     },
                     cancelLabel = "Later",
                     onCancel = { showPermissionDialog = false }
+                )
+            }
+
+            announcementToShow?.let { announcement ->
+                BigAnnouncementBottomSheet(
+                    announcement = announcement,
+                    onDismiss = {
+                        scope.launch {
+                            announcementManager.markAnnouncementAsSeen(announcement.id)
+                            announcementToShow = null
+                        }
+                    },
+                    onAction = { url ->
+                        scope.launch {
+                            announcementManager.markAnnouncementAsSeen(announcement.id)
+                            announcementToShow = null
+                            context.safeStartActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        }
+                    }
                 )
             }
         }

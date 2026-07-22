@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -51,6 +52,16 @@ class HomeViewModel @Inject constructor(
 
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
+
+    private val _showBookmarks = MutableStateFlow(false)
+    val showBookmarks = _showBookmarks.asStateFlow()
+
+    val bookmarkedResults: StateFlow<List<ResultEntity>> = repository.bookmarkedResults
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val bookmarkCount: StateFlow<Int> = repository.bookmarkedResults
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val departments = DepartmentClassifier.departments
 
@@ -117,14 +128,19 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
-                val newResults = repository.fetchResults()
+                val syncResult = repository.fetchResults()
                 _lastUpdated.value = formatTimestamp(System.currentTimeMillis())
-                if (newResults.isEmpty()) {
+                val newCount = syncResult.newResults.size
+                val removedCount = syncResult.removedResults.size
+                if (newCount == 0 && removedCount == 0) {
                     if (repository.getCachedCount() == 0) {
                         _uiEvent.send(UiEvent.ShowSnackbar("No results loaded. Pull down to retry."))
                     }
                 } else {
-                    _uiEvent.send(UiEvent.ShowSnackbar("${newResults.size} new result(s) found"))
+                    val parts = mutableListOf<String>()
+                    if (newCount > 0) parts.add("$newCount new")
+                    if (removedCount > 0) parts.add("$removedCount removed")
+                    _uiEvent.send(UiEvent.ShowSnackbar("Sync complete: ${parts.joinToString(", ")}"))
                 }
             } catch (e: Exception) {
                 checkServerStatus()
@@ -135,6 +151,23 @@ class HomeViewModel @Inject constructor(
                     deriveErrorMessage(e)
                 }
                 _uiEvent.send(UiEvent.ShowErrorDialog("Warning", msg))
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
+    fun hardRefresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                repository.hardRefresh()
+                _lastUpdated.value = formatTimestamp(System.currentTimeMillis())
+                checkServerStatus()
+                _uiEvent.send(UiEvent.ShowSnackbar("🗑️ Cache cleared. All results reloaded from SPPU."))
+            } catch (e: Exception) {
+                val msg = deriveErrorMessage(e)
+                _uiEvent.send(UiEvent.ShowErrorDialog("Hard Refresh Failed", msg))
             } finally {
                 _isRefreshing.value = false
             }
@@ -188,6 +221,14 @@ class HomeViewModel @Inject constructor(
     sealed class UiEvent {
         data class ShowSnackbar(val message: String) : UiEvent()
         data class ShowErrorDialog(val title: String, val message: String) : UiEvent()
+    }
+
+    fun toggleShowBookmarks() {
+        _showBookmarks.value = !_showBookmarks.value
+    }
+
+    fun dismissBookmarks() {
+        _showBookmarks.value = false
     }
 
     fun toggleBookmark(resultId: String) {

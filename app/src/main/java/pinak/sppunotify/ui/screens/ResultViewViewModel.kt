@@ -24,6 +24,7 @@ data class ResultViewState(
     val orgCaptchaText: String = "",
     val captchaImageStr: String = "",
     val isLoading: Boolean = false,
+    val isLoadingCaptcha: Boolean = false,
     val error: String? = null,
     val resultBytes: ByteArray? = null,
     val resultMimeType: String = "",
@@ -102,7 +103,7 @@ class ResultViewViewModel @Inject constructor(
 
     fun loadCaptcha() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.value = _state.value.copy(isLoadingCaptcha = true, error = null)
             val captcha = scraper.fetchCaptcha()
             if (captcha != null) {
                 val bytes = Base64.decode(captcha.imageBase64, Base64.DEFAULT)
@@ -111,10 +112,10 @@ class ResultViewViewModel @Inject constructor(
                     captchaBitmap = bitmap,
                     orgCaptchaText = captcha.orgCaptchaText,
                     captchaImageStr = captcha.imageBase64,
-                    isLoading = false,
+                    isLoadingCaptcha = false,
                 )
             } else {
-                _state.value = _state.value.copy(isLoading = false)
+                _state.value = _state.value.copy(isLoadingCaptcha = false)
                 _events.emit(ResultViewEvent.ShowErrorDialog(
                     "Captcha Error",
                     "Failed to load captcha from SPPU server. Check your connection or try again later."
@@ -149,7 +150,7 @@ class ResultViewViewModel @Inject constructor(
 
             val valid = scraper.validateCaptcha(s.captchaText, s.orgCaptchaText)
             if (!valid) {
-                _state.value = _state.value.copy(isLoading = false)
+                _state.value = _state.value.copy(isLoadingCaptcha = false)
                 _events.emit(ResultViewEvent.ShowErrorDialog(
                     "Invalid Captcha",
                     "The captcha text you entered was incorrect. A new captcha has been loaded — try again."
@@ -190,7 +191,7 @@ class ResultViewViewModel @Inject constructor(
                 )
                 _events.emit(ResultViewEvent.SaveResult(submitResult.bytes, submitResult.mimeType, suggestedName))
             } else {
-                _state.value = _state.value.copy(isLoading = false)
+                _state.value = _state.value.copy(isLoadingCaptcha = false)
                 _events.emit(ResultViewEvent.ShowErrorDialog(
                     "Server Busy",
                     "Failed to fetch result. The SPPU server may be busy or down (502/503). Please try again later."

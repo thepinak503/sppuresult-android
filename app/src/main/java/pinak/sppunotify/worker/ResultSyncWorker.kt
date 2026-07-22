@@ -55,7 +55,15 @@ class ResultSyncWorker @AssistedInject constructor(
         
         return try {
             // 1. Sync Results & Auto-Cleanup
-            val newResults = repository.fetchResults()
+            val syncResult = repository.fetchResults()
+            val newResults = syncResult.newResults
+            val removedResults = syncResult.removedResults
+
+            // Notify about removed results (archived/unpublished from SPPU)
+            if (removedResults.isNotEmpty() && prefs.notificationsEnabled) {
+                notificationHelper.showResultRemovedNotification(removedResults.map { it.title })
+            }
+
             if (newResults.isNotEmpty() && prefs.notificationsEnabled) {
                 val subscribedDepartments = prefs.subscribedDepartments
                 val keywords = prefs.watchlistKeywords
@@ -169,7 +177,7 @@ class ResultSyncWorker @AssistedInject constructor(
                 notificationHelper.showNewsNotification("Sync Success", "Results checked at ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}", "ANNOUNCEMENT")
             }
             
-            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "RESULTS", status = "SUCCESS", message = "${newResults.size} results found"))
+            syncLogDao.insertLog(pinak.sppunotify.data.local.SyncLogEntity(type = "RESULTS", status = "SUCCESS", message = "${newResults.size} new, ${removedResults.size} removed"))
             rescheduleIfNeeded()
             Result.success()
         } catch (e: Exception) {

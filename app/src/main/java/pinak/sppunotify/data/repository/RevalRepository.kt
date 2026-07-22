@@ -69,6 +69,20 @@ class RevalRepository @Inject constructor(
         newCourses
     }
 
+    suspend fun hardRefresh(): List<RevalCourse> = withContext(Dispatchers.IO) {
+        val fresh = scraper.scrapeCourses()
+        val entities = fresh.map { course ->
+            RevalCourseEntity(
+                eventTarget = course.eventTarget,
+                course = course.course,
+                subject = course.subject,
+            )
+        }
+        dao.clearAll()
+        dao.insertCourses(entities)
+        fresh
+    }
+
     suspend fun searchRevaluation(
         eventTarget: String,
         searchBy: String,
