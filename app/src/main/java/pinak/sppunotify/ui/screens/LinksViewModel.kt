@@ -39,8 +39,8 @@ class LinksViewModel @Inject constructor() : ViewModel() {
             _discoveryMessage.value = "Scanning for exam timetables..."
             
             val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-            // Check current year and next 2 years
-            val years = listOf(currentYear - 1, currentYear, currentYear + 1, currentYear + 2)
+            // Extensive search from 2019 to currentYear + 2
+            val years = (2019..currentYear + 2).toList()
             val sessions = listOf(
                 "APRMAY" to "April/May",
                 "OCTNOV" to "Oct/Nov"
