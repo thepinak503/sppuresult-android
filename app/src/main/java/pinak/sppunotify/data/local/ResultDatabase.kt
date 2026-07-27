@@ -12,9 +12,10 @@ import androidx.room.migration.Migration
         CircularEntity::class, 
         ExamDateEntity::class, 
         NotificationHistoryEntity::class,
-        SyncLogEntity::class
+        SyncLogEntity::class,
+        RemovedResultEntity::class
     ], 
-    version = 11, 
+    version = 13, 
     exportSchema = true
 )
 abstract class ResultDatabase : RoomDatabase() {
@@ -25,8 +26,16 @@ abstract class ResultDatabase : RoomDatabase() {
     abstract val examDateDao: ExamDateDao
     abstract val notificationHistoryDao: NotificationHistoryDao
     abstract val syncLogDao: SyncLogDao
+    abstract val removedResultDao: RemovedResultDao
 
     companion object {
+        val MIGRATION_12_13 = Migration(12, 13) { db ->
+            db.execSQL("ALTER TABLE results ADD COLUMN examPeriod INTEGER NOT NULL DEFAULT 0")
+        }
+        val MIGRATION_11_12 = Migration(11, 12) { db ->
+            db.execSQL("CREATE TABLE IF NOT EXISTS removed_results (id TEXT NOT NULL PRIMARY KEY, title TEXT NOT NULL, department TEXT NOT NULL, removedAt INTEGER NOT NULL DEFAULT 0)")
+            db.execSQL("ALTER TABLE notification_history ADD COLUMN targetUri TEXT")
+        }
         val MIGRATION_10_11 = Migration(10, 11) { db ->
             db.execSQL("CREATE TABLE IF NOT EXISTS sync_logs (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, status TEXT NOT NULL, message TEXT NOT NULL, timestamp INTEGER NOT NULL DEFAULT 0)")
         }

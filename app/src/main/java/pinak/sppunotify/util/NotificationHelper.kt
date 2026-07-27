@@ -144,7 +144,8 @@ class NotificationHelper(
     // ── News / Announcements ─────────────────────────────────────────────────
 
     fun showNewsNotification(title: String, message: String, type: String = "ANNOUNCEMENT") {
-        val pendingIntent = createDeepLinkPendingIntent("home")
+        val uri = "home"
+        val pendingIntent = createDeepLinkPendingIntent(uri)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_NEWS)
             .setSmallIcon(R.drawable.ic_notification)
@@ -162,13 +163,14 @@ class NotificationHelper(
             }
             .build()
         notificationManager.notify(NEWS_NOTIFICATION_ID, notification)
-        trackNotification("NEWS", title, message)
+        trackNotification("NEWS", title, message, uri)
     }
 
     // ── Revaluation → opens Revaluation tab ──────────────────────────────────
 
     fun showRevalNotification(count: Int) {
-        val pendingIntent = createDeepLinkPendingIntent("reval")
+        val uri = "reval"
+        val pendingIntent = createDeepLinkPendingIntent(uri)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_REVAL)
             .setSmallIcon(R.drawable.ic_notification)
@@ -180,7 +182,7 @@ class NotificationHelper(
             .setAutoCancel(true)
             .build()
         notificationManager.notify(REVAL_NOTIFICATION_ID, notification)
-        trackNotification("REVAL", "New Revaluation Courses", "$count course(s)")
+        trackNotification("REVAL", "New Revaluation Courses", "$count course(s)", uri)
     }
 
     // ── Results → opens result detail screen ─────────────────────────────────
@@ -227,7 +229,7 @@ class NotificationHelper(
                 }
                 .build()
             notificationManager.notify(item.message.hashCode(), notification)
-            trackNotification(if (isPriority) "PRIORITY" else "RESULT", item.title, item.message)
+            trackNotification(if (isPriority) "PRIORITY" else "RESULT", item.title, item.message, uri)
         } else {
             val summaryText = "${results.size} new result(s) published"
             results.forEach { item ->
@@ -251,10 +253,11 @@ class NotificationHelper(
                     .setAutoCancel(true)
                     .build()
                 notificationManager.notify(item.message.hashCode(), notification)
-                trackNotification(if (isPriority) "PRIORITY" else "RESULT", item.title, item.message)
+                trackNotification(if (isPriority) "PRIORITY" else "RESULT", item.title, item.message, uri)
             }
 
-            val summaryPendingIntent = createDeepLinkPendingIntent("home", SUMMARY_ID)
+            val summaryUri = "home"
+            val summaryPendingIntent = createDeepLinkPendingIntent(summaryUri, SUMMARY_ID)
             val summary = NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(if (isPriority) "Priority Results Available" else "New Results Available")
@@ -268,6 +271,7 @@ class NotificationHelper(
                 .build()
 
             notificationManager.notify(if (isPriority) PRIORITY_SUMMARY_ID else SUMMARY_ID, summary)
+            trackNotification(if (isPriority) "PRIORITY" else "RESULT", if (isPriority) "Priority Results Available" else "New Results Available", summaryText, summaryUri)
         }
     }
 
@@ -289,7 +293,8 @@ class NotificationHelper(
     fun showExamDateNotification(newDates: List<String>) {
         if (newDates.isEmpty()) return
 
-        val pendingIntent = createDeepLinkPendingIntent("exam_dates")
+        val uri = "exam_dates"
+        val pendingIntent = createDeepLinkPendingIntent(uri)
 
         val contentText = if (newDates.size == 1) {
             newDates.first()
@@ -309,13 +314,14 @@ class NotificationHelper(
             .setAutoCancel(true)
             .build()
         notificationManager.notify(EXAM_DATE_NOTIFICATION_ID, notification)
-        trackNotification("EXAM_DATE", "New Exam Form Dates", "${newDates.size} date(s)")
+        trackNotification("EXAM_DATE", "New Exam Form Dates", "${newDates.size} date(s)", uri)
     }
 
     // ── Circulars → opens Circulars tab ──────────────────────────────────────
 
     fun showCircularNotification(count: Int) {
-        val pendingIntent = createDeepLinkPendingIntent("circulars")
+        val uri = "circulars"
+        val pendingIntent = createDeepLinkPendingIntent(uri)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_CIRCULARS)
             .setSmallIcon(R.drawable.ic_notification)
@@ -327,7 +333,7 @@ class NotificationHelper(
             .setAutoCancel(true)
             .build()
         notificationManager.notify(CIRCULAR_NOTIFICATION_ID, notification)
-        trackNotification("CIRCULAR", "New University Circulars", "$count circular(s)")
+        trackNotification("CIRCULAR", "New University Circulars", "$count circular(s)", uri)
     }
 
     // ── Removed Results → notifies when results are deleted from SPPU ─────────
@@ -335,7 +341,8 @@ class NotificationHelper(
     fun showResultRemovedNotification(removedTitles: List<String>) {
         if (removedTitles.isEmpty()) return
         
-        val pendingIntent = createDeepLinkPendingIntent("home")
+        val uri = "removedResults"
+        val pendingIntent = createDeepLinkPendingIntent(uri)
         
         val title = if (removedTitles.size == 1) "Result Removed from SPPU" else "${removedTitles.size} Results Removed from SPPU"
         val message = if (removedTitles.size == 1) {
@@ -357,7 +364,7 @@ class NotificationHelper(
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .build()
         notificationManager.notify(REMOVED_RESULT_NOTIFICATION_ID, notification)
-        trackNotification("REMOVED", title, message)
+        trackNotification("REMOVED", title, message, uri)
     }
 
     // ── Updates ──────────────────────────────────────────────────────────────
@@ -386,14 +393,15 @@ class NotificationHelper(
 
     // ── History tracking ─────────────────────────────────────────────────────
 
-    private fun trackNotification(type: String, title: String, message: String) {
+    private fun trackNotification(type: String, title: String, message: String, targetUri: String? = null) {
         historyDao?.let { dao ->
             notificationScope.launch {
                 dao.insert(
                     NotificationHistoryEntity(
                         title = title,
                         message = message,
-                        type = type
+                        type = type,
+                        targetUri = targetUri
                     )
                 )
                 val weekAgo = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)

@@ -77,6 +77,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -87,6 +91,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -99,6 +105,12 @@ import androidx.appcompat.app.AppCompatDelegate
 import pinak.sppunotify.util.LocaleHelper
 import pinak.sppunotify.ui.theme.ThemeMode
 import pinak.sppunotify.ui.components.AppTopBar
+
+enum class WatchlistTab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    DEPARTMENTS("Departments", Icons.Default.Notifications),
+    KEYWORDS("Keywords", Icons.Default.Add),
+    PRIORITY("Priority", Icons.Default.Star)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("BatteryLife")
@@ -189,10 +201,10 @@ fun SettingsScreen(
                 .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Background Sync Section
+            // Background Sync & Automation Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                 )
@@ -210,8 +222,8 @@ fun SettingsScreen(
                             Icon(Icons.Default.Sync, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(12.dp))
                             Column {
-                                Text(stringResource(R.string.bg_sync_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text(stringResource(R.string.bg_sync_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Sync & Updates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text("Manage background sync and auto-updates", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                         Switch(
@@ -243,24 +255,22 @@ fun SettingsScreen(
                             } else {
                                 Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Refresh & Sync Now")
+                                Text("Sync All Now")
                             }
                         }
 
                         Spacer(Modifier.height(16.dp))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        Spacer(Modifier.height(16.dp))
                         
-                        // Global Sync Interval
                         SyncIntervalInput(
-                            label = "Background Sync Frequency (minutes)",
+                            label = "Sync Interval",
                             value = userPreferences.syncInterval,
                             onValueChange = { interval -> viewModel.updateSyncInterval(interval) }
                         )
 
                         Spacer(Modifier.height(12.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        Spacer(Modifier.height(12.dp))
 
-                        // Auto Update Toggle
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -268,7 +278,7 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Auto-download Updates", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Text("Automatically download app updates when available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Download updates when available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Switch(
                                 checked = userPreferences.autoUpdateEnabled,
@@ -361,217 +371,192 @@ fun SettingsScreen(
                 }
             }
 
-            // Subscribe to Departments Card
+            // Unified Watchlist & Notifications Card
+            var selectedWatchlistTab by remember { mutableStateOf(WatchlistTab.DEPARTMENTS) }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(10.dp))
-                        Text("📋 " + stringResource(R.string.subscribe_departments), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        stringResource(R.string.subscribe_departments_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(12.dp))
-
-                    val subscribed = userPreferences.subscribedDepartments
-                    val hasSubscriptions = subscribed.isNotEmpty() || userPreferences.watchlistKeywords.isNotEmpty() || userPreferences.priorityKeywords.isNotEmpty()
-
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        pinak.sppunotify.util.DepartmentClassifier.departments.filter { it != "All" }.forEach { dept ->
-                            val isSubscribed = dept in subscribed
-                            FilterChip(
-                                selected = isSubscribed,
-                                onClick = { viewModel.toggleDepartmentSubscription(dept) },
-                                label = { Text(dept, style = MaterialTheme.typography.labelMedium) },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            )
-                        }
-                    }
-
-                    if (!hasSubscriptions) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.no_subscriptions_warning),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            // Smart Watchlist Keywords Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                 )
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                        Spacer(Modifier.width(10.dp))
-                        Text(stringResource(R.string.smart_watchlist), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text(stringResource(R.string.watchlist_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(12.dp))
-
-                    var newKeyword by remember { mutableStateOf("") }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newKeyword,
-                            onValueChange = { newKeyword = it },
-                            placeholder = { Text("e.g. Mechanical, TE 2019", fontSize = 12.sp) },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        IconButton(onClick = { viewModel.addKeyword(newKeyword); newKeyword = "" }, enabled = newKeyword.isNotBlank()) {
-                            Icon(Icons.Default.Add, contentDescription = "Add")
+                Column(modifier = Modifier.padding(12.dp)) {
+                    SecondaryTabRow(
+                        selectedTabIndex = selectedWatchlistTab.ordinal,
+                        containerColor = Color.Transparent,
+                        divider = {},
+                        indicator = {
+                            TabRowDefaults.SecondaryIndicator(
+                                modifier = Modifier.tabIndicatorOffset(selectedWatchlistTab.ordinal),
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
-                    }
-
-                    if (userPreferences.watchlistKeywords.isNotEmpty()) {
-                        Spacer(Modifier.height(12.dp))
-                        @OptIn(ExperimentalLayoutApi::class)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            userPreferences.watchlistKeywords.forEach { keyword ->
-                                InputChip(
-                                    selected = true,
-                                    onClick = { viewModel.removeKeyword(keyword) },
-                                    label = { Text(keyword) },
-                                    trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp)) },
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // ── Suggested Keywords ──────────────────────────────────────
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    Spacer(Modifier.height(8.dp))
-
-                    val allKeywords = userPreferences.watchlistKeywords
-
-                    Text(
-                        stringResource(R.string.suggested_keywords),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        stringResource(R.string.suggested_keywords_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(8.dp))
-
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        pinak.sppunotify.util.DepartmentClassifier.suggestedKeywords.filter { it !in allKeywords }.forEach { suggestion ->
-                            AssistChip(
-                                onClick = { viewModel.addKeyword(suggestion) },
-                                label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Add,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                },
-                                shape = RoundedCornerShape(6.dp),
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                                    labelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                        WatchlistTab.entries.forEach { tab ->
+                            Tab(
+                                selected = selectedWatchlistTab == tab,
+                                onClick = { selectedWatchlistTab = tab },
+                                text = { Text(tab.label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) },
+                                icon = { Icon(tab.icon, contentDescription = null, modifier = Modifier.size(18.dp)) }
                             )
                         }
                     }
-                }
-            }
 
-            // Priority Watchlist Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.15f)
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
-                        Spacer(Modifier.width(10.dp))
-                        Text("⭐ Priority Watchlist", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Text("Get High Importance notifications (custom sound & vibration) for results matching these keywords.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                    var newPriorityKeyword by remember { mutableStateOf("") }
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newPriorityKeyword,
-                            onValueChange = { newPriorityKeyword = it },
-                            placeholder = { Text("e.g. TE Mechanical 2019", fontSize = 12.sp) },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        IconButton(onClick = { viewModel.addPriorityKeyword(newPriorityKeyword); newPriorityKeyword = "" }, enabled = newPriorityKeyword.isNotBlank()) {
-                            Icon(Icons.Default.Add, contentDescription = "Add")
-                        }
-                    }
-
-                    if (userPreferences.priorityKeywords.isNotEmpty()) {
-                        Spacer(Modifier.height(12.dp))
-                        @OptIn(ExperimentalLayoutApi::class)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            userPreferences.priorityKeywords.forEach { keyword ->
-                                InputChip(
-                                    selected = true,
-                                    onClick = { viewModel.removePriorityKeyword(keyword) },
-                                    label = { Text(keyword) },
-                                    trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp)) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = InputChipDefaults.inputChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.tertiary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onTertiary,
-                                        selectedTrailingIconColor = MaterialTheme.colorScheme.onTertiary
-                                    )
+                    Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+                        when (selectedWatchlistTab) {
+                            WatchlistTab.DEPARTMENTS -> {
+                                Text(
+                                    "🔔 Subscribe to departments to receive instant alerts for all their results.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Spacer(Modifier.height(12.dp))
+
+                                val subscribed = userPreferences.subscribedDepartments
+                                @OptIn(ExperimentalLayoutApi::class)
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    pinak.sppunotify.util.DepartmentClassifier.departments.filter { it != "All" }.forEach { dept ->
+                                        val isSubscribed = dept in subscribed
+                                        FilterChip(
+                                            selected = isSubscribed,
+                                            onClick = { viewModel.toggleDepartmentSubscription(dept) },
+                                            label = { Text(dept, style = MaterialTheme.typography.labelMedium) },
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                            )
+                                        )
+                                    }
+                                }
                             }
+                            WatchlistTab.KEYWORDS -> {
+                                Text("🔍 Receive notifications whenever a result title contains any of these keywords.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(12.dp))
+
+                                var newKeyword by remember { mutableStateOf("") }
+                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    OutlinedTextField(
+                                        value = newKeyword,
+                                        onValueChange = { newKeyword = it },
+                                        placeholder = { Text("e.g. Mechanical, TE 2019", fontSize = 12.sp) },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(16.dp),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    IconButton(onClick = { viewModel.addKeyword(newKeyword); newKeyword = "" }, enabled = newKeyword.isNotBlank()) {
+                                        Icon(Icons.Default.Add, contentDescription = "Add")
+                                    }
+                                }
+
+                                if (userPreferences.watchlistKeywords.isNotEmpty()) {
+                                    Spacer(Modifier.height(12.dp))
+                                    @OptIn(ExperimentalLayoutApi::class)
+                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        userPreferences.watchlistKeywords.forEach { keyword ->
+                                            InputChip(
+                                                selected = true,
+                                                onClick = { viewModel.removeKeyword(keyword) },
+                                                label = { Text(keyword) },
+                                                trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(Modifier.height(16.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                Spacer(Modifier.height(12.dp))
+
+                                Text(
+                                    "Suggestions",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.height(8.dp))
+
+                                @OptIn(ExperimentalLayoutApi::class)
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    val allKeywords = userPreferences.watchlistKeywords
+                                    pinak.sppunotify.util.DepartmentClassifier.suggestedKeywords.filter { it !in allKeywords }.forEach { suggestion ->
+                                        AssistChip(
+                                            onClick = { viewModel.addKeyword(suggestion) },
+                                            label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            WatchlistTab.PRIORITY -> {
+                                Text("⭐ Get HIGH-IMPORTANCE alerts (loud sound & custom vibration) for matching keywords.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.height(12.dp))
+
+                                var newPriorityKeyword by remember { mutableStateOf("") }
+                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    OutlinedTextField(
+                                        value = newPriorityKeyword,
+                                        onValueChange = { newPriorityKeyword = it },
+                                        placeholder = { Text("e.g. TE Mechanical 2019", fontSize = 12.sp) },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(16.dp),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    IconButton(onClick = { viewModel.addPriorityKeyword(newPriorityKeyword); newPriorityKeyword = "" }, enabled = newPriorityKeyword.isNotBlank()) {
+                                        Icon(Icons.Default.Add, contentDescription = "Add")
+                                    }
+                                }
+
+                                if (userPreferences.priorityKeywords.isNotEmpty()) {
+                                    Spacer(Modifier.height(12.dp))
+                                    @OptIn(ExperimentalLayoutApi::class)
+                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        userPreferences.priorityKeywords.forEach { keyword ->
+                                            InputChip(
+                                                selected = true,
+                                                onClick = { viewModel.removePriorityKeyword(keyword) },
+                                                label = { Text(keyword) },
+                                                trailingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = InputChipDefaults.inputChipColors(
+                                                    selectedContainerColor = MaterialTheme.colorScheme.tertiary,
+                                                    selectedLabelColor = MaterialTheme.colorScheme.onTertiary,
+                                                    selectedTrailingIconColor = MaterialTheme.colorScheme.onTertiary
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        val subscribed = userPreferences.subscribedDepartments
+                        val hasSubscriptions = subscribed.isNotEmpty() || userPreferences.watchlistKeywords.isNotEmpty() || userPreferences.priorityKeywords.isNotEmpty()
+                        if (!hasSubscriptions) {
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                "⚠️ No active watchlist items. You won't receive notifications for new results.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }

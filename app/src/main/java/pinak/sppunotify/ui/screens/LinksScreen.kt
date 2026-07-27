@@ -78,7 +78,7 @@ fun LinksScreen(
 
     // Merge static + dynamic exam timetable links
     val allLinks = remember(staticLinks, examTimeTableLinks) {
-        staticLinks + examTimeTableLinks
+        (staticLinks + examTimeTableLinks).distinctBy { it.url }
     }
 
     val groupedLinks = remember(allLinks) {
@@ -209,10 +209,9 @@ fun LinksScreen(
                             modifier = Modifier.padding(top = if (category == "Exam Time Tables") 4.dp else 16.dp, bottom = 8.dp)
                         )
                     }
-                    items(categoryLinks, key = { it.url }) { link ->
+                    items(categoryLinks, key = { it.category + it.url }) { link ->
                         LinkCard(
                             link = link,
-                            modifier = Modifier.animateItem(),
                         ) {
                             val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
                             context.safeStartActivity(intent)
@@ -220,11 +219,6 @@ fun LinksScreen(
                     }
                 }
             }
-
-            LazyScrollbar(
-                listState = scrollState,
-                modifier = Modifier.align(Alignment.CenterEnd)
-            )
         }
     }
 }

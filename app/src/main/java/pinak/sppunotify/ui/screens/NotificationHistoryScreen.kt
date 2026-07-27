@@ -2,6 +2,7 @@ package pinak.sppunotify.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,7 @@ import java.util.*
 fun NotificationHistoryScreen(
     viewModel: NotificationHistoryViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
+    onEntryClick: (String) -> Unit
 ) {
     val entries by viewModel.entries.collectAsState()
     var filterType by remember { mutableStateOf("All") }
@@ -60,7 +62,14 @@ fun NotificationHistoryScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val filterEntries = listOf("All" to "All", "RESULT" to "Results", "REVAL" to "Reval", "EXAM_DATE" to "Exam Dates", "NEWS" to "News")
+                val filterEntries = listOf(
+                    "All" to "All",
+                    "RESULT" to "Results",
+                    "REVAL" to "Reval",
+                    "EXAM_DATE" to "Exam Dates",
+                    "REMOVED" to "Removed",
+                    "NEWS" to "News"
+                )
                 items(filterEntries, key = { it.first }) { (key, label) ->
                     FilterChip(
                         selected = filterType == key,
@@ -107,7 +116,11 @@ fun NotificationHistoryScreen(
                     ) { entry ->
                         NotificationHistoryCard(
                             entry = entry,
-                            modifier = Modifier.animateItem(),
+                            modifier = Modifier
+                                .animateItem()
+                                .clickable(enabled = entry.targetUri != null) {
+                                    entry.targetUri?.let { onEntryClick(it) }
+                                },
                         )
                     }
                 }
@@ -130,6 +143,7 @@ private fun NotificationHistoryCard(
         "RESULT" -> Icons.Default.Description
         "REVAL" -> Icons.Default.Refresh
         "EXAM_DATE" -> Icons.Default.Event
+        "REMOVED" -> Icons.Default.DeleteForever
         else -> Icons.Default.Campaign
     }
 
@@ -137,6 +151,7 @@ private fun NotificationHistoryCard(
         "RESULT" -> MaterialTheme.colorScheme.primary
         "REVAL" -> MaterialTheme.colorScheme.tertiary
         "EXAM_DATE" -> MaterialTheme.colorScheme.secondary
+        "REMOVED" -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.outline
     }
 

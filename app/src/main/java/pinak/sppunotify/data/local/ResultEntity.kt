@@ -17,6 +17,7 @@ data class ResultEntity(
     val patternName: String = "",
     val patternId: String = "",
     val department: String = "Other UG",
+    val examPeriod: Int = 0,
     val fetchedAt: Long = System.currentTimeMillis(),
     val isViewed: Boolean = false,
     val isBookmarked: Boolean = false,

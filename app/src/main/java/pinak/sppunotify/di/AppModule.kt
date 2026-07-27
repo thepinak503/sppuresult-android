@@ -36,13 +36,19 @@ object AppModule {
             ResultDatabase.MIGRATION_7_8,
             ResultDatabase.MIGRATION_8_9,
             ResultDatabase.MIGRATION_9_10,
-            ResultDatabase.MIGRATION_10_11
+            ResultDatabase.MIGRATION_10_11,
+            ResultDatabase.MIGRATION_11_12,
+            ResultDatabase.MIGRATION_12_13
         ).build()
     }
 
     @Provides
     @Singleton
     fun provideResultDao(db: ResultDatabase): pinak.sppunotify.data.local.ResultDao = db.dao
+
+    @Provides
+    @Singleton
+    fun provideRemovedResultDao(db: ResultDatabase): pinak.sppunotify.data.local.RemovedResultDao = db.removedResultDao
 
     @Provides
     @Singleton

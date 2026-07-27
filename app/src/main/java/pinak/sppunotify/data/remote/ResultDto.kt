@@ -11,4 +11,5 @@ data class ResultDto(
     val patternName: String = "",
     val patternId: String = "",
     val department: String = "",
+    val examPeriod: Int = 0,
 )

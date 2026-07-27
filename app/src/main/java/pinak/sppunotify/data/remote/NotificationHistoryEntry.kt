@@ -8,5 +8,6 @@ data class NotificationHistoryEntry(
     val title: String,
     val message: String,
     val type: String,
+    val targetUri: String? = null,
     val timestamp: Long
 )

@@ -10,6 +10,7 @@ data class NotificationHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val message: String,
-    val type: String, // "RESULT", "REVAL", "EXAM_DATE", "NEWS"
+    val type: String, // "RESULT", "REVAL", "EXAM_DATE", "NEWS", "REMOVED"
+    val targetUri: String? = null,
     val timestamp: Long = System.currentTimeMillis()
 )

@@ -24,6 +24,7 @@ class NotificationHistoryViewModel @Inject constructor(
                 title = entity.title,
                 message = entity.message,
                 type = entity.type,
+                targetUri = entity.targetUri,
                 timestamp = entity.timestamp
             )
         }

@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -238,93 +239,36 @@ fun ResultViewScreen(
                     ),
                 )
 
-                // ── Captcha Section ─────────────────────────────────────────
+                // ── Captcha Image Section ──────────────────────────────────
                 if (state.captchaBitmap != null || state.isLoadingCaptcha) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        shape = RoundedCornerShape(24.dp),
+                            .height(100.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         )
                     ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Security,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    "Security Verification",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-
                             if (state.isLoadingCaptcha) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(70.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(36.dp),
-                                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
-                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                        strokeWidth = 4.dp
-                                    )
-                                }
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                    strokeWidth = 3.dp
+                                )
                             } else if (state.captchaBitmap != null) {
                                 Image(
                                     bitmap = state.captchaBitmap!!.asImageBitmap(),
                                     contentDescription = "Security captcha image",
                                     modifier = Modifier
-                                        .height(72.dp)
+                                        .fillMaxHeight(0.7f)
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp)),
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            FilledTonalButton(
-                                onClick = { viewModel.loadCaptcha() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                enabled = !state.isLoadingCaptcha
-                            ) {
-                                if (state.isLoadingCaptcha) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        strokeWidth = 2.dp,
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                } else {
-                                    Icon(
-                                        Icons.Default.Refresh,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                }
-                                Text(
-                                    if (state.captchaBitmap != null) "⟳ Refresh Captcha" else "Load Captcha",
-                                    fontWeight = FontWeight.SemiBold
+                                        .padding(horizontal = 16.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
                                 )
                             }
                         }
@@ -341,8 +285,40 @@ fun ResultViewScreen(
                         keyboardType = KeyboardType.Ascii,
                         imeAction = ImeAction.Done
                     ),
+                    leadingIcon = { Icon(Icons.Default.Security, contentDescription = null) },
                     supportingText = { Text("Enter the 5-character text from the image above") },
                 )
+
+                OutlinedButton(
+                    onClick = { viewModel.loadCaptcha() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !state.isLoadingCaptcha,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    if (state.isLoadingCaptcha) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(12.dp))
+                    } else {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                    }
+                    Text(
+                        if (state.captchaBitmap != null) "Reload Captcha" else "Load Captcha",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

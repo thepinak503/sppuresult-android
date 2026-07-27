@@ -32,7 +32,7 @@ class ResultScraper @Inject constructor() {
         private const val BASE_URL = "https://onlineresults.unipune.ac.in"
         private const val DASHBOARD_URL = "$BASE_URL/Result/Dashboard/Default"
         private const val TAG = "ResultScraper"
-        private const val TIMEOUT_MS = 15000
+        private const val TIMEOUT_MS = 30000
         private const val HEALTH_CHECK_TIMEOUT_MS = 8000
         
         private val trustAllContext: SSLContext by lazy {
@@ -224,21 +224,30 @@ class ResultScraper @Inject constructor() {
         }
     }
 
-    suspend fun scrapeLatestResults(): List<ResultDto> = withContext(Dispatchers.IO) {
+    data class ScrapePeriodResult(
+        val period: Int,
+        val isSuccess: Boolean,
+        val results: List<ResultDto>
+    )
+
+    suspend fun scrapeLatestResults(): List<ScrapePeriodResult> = withContext(Dispatchers.IO) {
         val initialSes = newSession()
         val sessionPeriods = fetchSessionPeriods(initialSes)
 
-        coroutineScope {
+        val periodResults = coroutineScope {
             sessionPeriods.map { period ->
                 async {
                     scrapeResultsForPeriod(period)
                 }
-            }.awaitAll().flatten().distinctBy { it.id }
+            }.awaitAll()
         }
+
+        periodResults
     }
 
-    private suspend fun scrapeResultsForPeriod(period: Int): List<ResultDto> = withContext(Dispatchers.IO) {
+    private suspend fun scrapeResultsForPeriod(period: Int): ScrapePeriodResult = withContext(Dispatchers.IO) {
         val results = mutableListOf<ResultDto>()
+        var isSuccess = false
         try {
             val url = if (period == 0) DASHBOARD_URL else "$BASE_URL/Result/Dashboard/session?Exam_Period=$period"
             val doc = retry { newSession().url(url).get() }
@@ -258,12 +267,13 @@ class ResultScraper @Inject constructor() {
                 val id = (title + date).hashCode().toString()
                 val viewUrl = buildViewUrl(patternName, patternId)
 
-                results.add(ResultDto(id, title, viewUrl, date, patternName, patternId))
+                results.add(ResultDto(id, title, viewUrl, date, patternName, patternId, examPeriod = period))
             }
+            isSuccess = true
         } catch (_: Exception) {
             // Log.e(TAG, "Scrape failed for session $period: ${e.message}")
         }
-        results
+        ScrapePeriodResult(period, isSuccess, results)
     }
 
     private fun buildViewUrl(name: String, id: String): String {
@@ -367,6 +377,25 @@ class ResultScraper @Inject constructor() {
         patternName: String, patternId: String, seatNo: String, motherName: String,
         captchaText: String, orgCaptchaText: String, captchaImageStr: String,
     ): SubmitResult? = withContext(Dispatchers.IO) {
+        if (seatNo.equals("DUMMY", ignoreCase = true)) {
+            val dummyHtml = """
+                <html>
+                <body style="font-family: sans-serif; padding: 20px;">
+                    <h1 style="color: #1a73e8;">SPPU Dummy Result</h1>
+                    <hr>
+                    <p><b>Seat No:</b> $seatNo</p>
+                    <p><b>Mother Name:</b> $motherName</p>
+                    <p><b>Pattern:</b> $patternName ($patternId)</p>
+                    <div style="background: #f1f3f4; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <p>This is a simulated result for testing purposes while the SPPU servers are under high load.</p>
+                        <p>Your actual result will be available once the official portal becomes responsive.</p>
+                    </div>
+                </body>
+                </html>
+            """.trimIndent()
+            return@withContext SubmitResult(dummyHtml.toByteArray(), "text/html")
+        }
+
         val ses = newSession()
         try {
             val resp = retry {

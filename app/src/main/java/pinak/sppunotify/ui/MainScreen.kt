@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Info
@@ -83,10 +84,13 @@ sealed class Screen(val route: String, val labelRes: Int, val icon: ImageVector,
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    mainViewModel: MainViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val activity = context as? Activity
+    val isSyncing by mainViewModel.isSyncing.collectAsState()
 
     // Handle deep links from notifications and shortcuts
     LaunchedEffect(activity) {
@@ -268,6 +272,21 @@ fun MainScreen() {
                         ),
                         modifier = Modifier.padding(vertical = 2.dp)
                     )
+                    NavigationDrawerItem(
+                        label = { Text("Removed Results", fontWeight = FontWeight.Medium) },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate("removedResults")
+                        },
+                        icon = { Icon(Icons.Default.DeleteForever, contentDescription = "Removed Results") },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
                     Spacer(Modifier.height(24.dp))
                 }
             }
@@ -289,6 +308,39 @@ fun MainScreen() {
                     aboutScrollState = aboutScrollState,
                     onMenuClick = { coroutineScope.launch { drawerState.open() } }
                 )
+            }
+
+            // Global Sync Indicator
+            AnimatedVisibility(
+                visible = isSyncing,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(24.dp),
+                    tonalElevation = 8.dp,
+                    shadowElevation = 8.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Text(
+                            "Syncing SPPU Data...",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }
@@ -400,7 +452,10 @@ private fun NavHostContent(
             ExamDatesScreen(listState = examDatesScrollState, onMenuClick = onMenuClick)
         }
         composable(Screen.Calculator.route) {
-            CalculatorScreen(onMenuClick = onMenuClick)
+            CalculatorScreen(
+                onMenuClick = onMenuClick,
+                onReferenceClick = { navController.navigate("formulaReference") }
+            )
         }
         composable(Screen.Vault.route) {
             VaultScreen(
@@ -466,7 +521,31 @@ private fun NavHostContent(
         composable(
             route = "notificationHistory",
         ) {
-            NotificationHistoryScreen(onBackClick = { navController.popBackStack() })
+            NotificationHistoryScreen(
+                onBackClick = { navController.popBackStack() },
+                onEntryClick = { targetUri ->
+                    try {
+                        // Handle potential special characters or absolute URIs if any
+                        if (targetUri.startsWith("sppuwatch://")) {
+                            navController.navigate(targetUri.toUri().path?.removePrefix("/") ?: Screen.Home.route)
+                        } else {
+                            navController.navigate(targetUri)
+                        }
+                    } catch (_: Exception) {
+                        navController.navigate(Screen.Home.route)
+                    }
+                }
+            )
+        }
+        composable(
+            route = "removedResults",
+        ) {
+            RemovedResultsScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(
+            route = "formulaReference",
+        ) {
+            FormulaReferenceScreen(onBackClick = { navController.popBackStack() })
         }
     }
 }
