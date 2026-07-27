@@ -377,25 +377,6 @@ class ResultScraper @Inject constructor() {
         patternName: String, patternId: String, seatNo: String, motherName: String,
         captchaText: String, orgCaptchaText: String, captchaImageStr: String,
     ): SubmitResult? = withContext(Dispatchers.IO) {
-        if (seatNo.equals("DUMMY", ignoreCase = true)) {
-            val dummyHtml = """
-                <html>
-                <body style="font-family: sans-serif; padding: 20px;">
-                    <h1 style="color: #1a73e8;">SPPU Dummy Result</h1>
-                    <hr>
-                    <p><b>Seat No:</b> $seatNo</p>
-                    <p><b>Mother Name:</b> $motherName</p>
-                    <p><b>Pattern:</b> $patternName ($patternId)</p>
-                    <div style="background: #f1f3f4; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                        <p>This is a simulated result for testing purposes while the SPPU servers are under high load.</p>
-                        <p>Your actual result will be available once the official portal becomes responsive.</p>
-                    </div>
-                </body>
-                </html>
-            """.trimIndent()
-            return@withContext SubmitResult(dummyHtml.toByteArray(), "text/html")
-        }
-
         val ses = newSession()
         try {
             val resp = retry {

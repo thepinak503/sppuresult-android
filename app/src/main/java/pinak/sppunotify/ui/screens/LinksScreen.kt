@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.History
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,6 +43,7 @@ fun LinksScreen(
 ) {
     val context = LocalContext.current
     val examTimeTableLinks by viewModel.examTimeTableLinks.collectAsState()
+    val archiveQpLinks by viewModel.archiveQpLinks.collectAsState()
     val isDiscovering by viewModel.isDiscovering.collectAsState()
     val discoveryMessage by viewModel.discoveryMessage.collectAsState()
 
@@ -52,7 +55,6 @@ fun LinksScreen(
             SppuLink("SPPU Results Link 2", "http://onlineresults.unipune.ac.in/Result/Dashboard/Default", "Results"),
             SppuLink("Revaluation Results", "https://unipune.ac.in/university_files/Reval_Online_Results_online.htm", "Results"),
             SppuLink("Exam Form Dates", "https://examform.unipune.ac.in/Support/StuExDates.aspx", "Exam"),
-            SppuLink("Exam Circulars", "http://collegecirculars.unipune.ac.in/sites/examdocs/Time%20Tables%20APRMAY%202026/Forms/AllItems.aspx", "Exam"),
             SppuLink("Syllabus 2026", "http://collegecirculars.unipune.ac.in/sites/documents/Syllabus%202026/Forms/AllItems.aspx", "Syllabus"),
             SppuLink("Syllabus 2025", "http://collegecirculars.unipune.ac.in/sites/documents/Syllabus%202025/Forms/AllItems.aspx", "Syllabus"),
             SppuLink("Syllabus 2024", "http://collegecirculars.unipune.ac.in/sites/documents/Syllabus%202024/Forms/AllItems.aspx", "Syllabus"),
@@ -76,9 +78,9 @@ fun LinksScreen(
         )
     }
 
-    // Merge static + dynamic exam timetable links
-    val allLinks = remember(staticLinks, examTimeTableLinks) {
-        (staticLinks + examTimeTableLinks).distinctBy { it.url }
+    // Merge static + dynamic links, preferring dynamic categories for same URLs
+    val allLinks = remember(staticLinks, examTimeTableLinks, archiveQpLinks) {
+        (examTimeTableLinks + archiveQpLinks + staticLinks).distinctBy { it.url }
     }
 
     val groupedLinks = remember(allLinks) {
@@ -89,6 +91,7 @@ fun LinksScreen(
     val categoryOrder = remember(groupedLinks) {
         val desiredOrder = listOf(
             "Exam Time Tables",
+            "Archive Question Papers",
             "Main",
             "Results",
             "Exam",
@@ -201,10 +204,11 @@ fun LinksScreen(
                         Text(
                             text = category,
                             style = MaterialTheme.typography.titleMedium,
-                            color = if (category == "Exam Time Tables")
-                                MaterialTheme.colorScheme.tertiary
-                            else
-                                MaterialTheme.colorScheme.primary,
+                            color = when (category) {
+                                "Exam Time Tables" -> MaterialTheme.colorScheme.tertiary
+                                "Archive Question Papers" -> MaterialTheme.colorScheme.secondary
+                                else -> MaterialTheme.colorScheme.primary
+                            },
                             fontWeight = FontWeight.ExtraBold,
                             modifier = Modifier.padding(top = if (category == "Exam Time Tables") 4.dp else 16.dp, bottom = 8.dp)
                         )
@@ -212,6 +216,11 @@ fun LinksScreen(
                     items(categoryLinks, key = { it.category + it.url }) { link ->
                         LinkCard(
                             link = link,
+                            icon = when (category) {
+                                "Archive Question Papers" -> Icons.Default.History
+                                "Exam Time Tables" -> Icons.Default.Schedule
+                                else -> Icons.AutoMirrored.Filled.OpenInNew
+                            }
                         ) {
                             val intent = Intent(Intent.ACTION_VIEW, link.url.toUri())
                             context.safeStartActivity(intent)
@@ -227,6 +236,7 @@ fun LinksScreen(
 fun LinkCard(
     link: SppuLink,
     modifier: Modifier = Modifier,
+    icon: ImageVector = Icons.AutoMirrored.Filled.OpenInNew,
     onClick: () -> Unit,
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -263,7 +273,7 @@ fun LinkCard(
             )
             Spacer(Modifier.width(8.dp))
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                imageVector = icon,
                 contentDescription = "Open link",
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant

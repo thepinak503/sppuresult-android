@@ -148,19 +148,15 @@ class ResultViewViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
-            val isDummy = s.seatNo.equals("DUMMY", ignoreCase = true)
-            
-            if (!isDummy) {
-                val valid = scraper.validateCaptcha(s.captchaText, s.orgCaptchaText)
-                if (!valid) {
-                    _state.value = _state.value.copy(isLoadingCaptcha = false)
-                    _events.emit(ResultViewEvent.ShowErrorDialog(
-                        "Invalid Captcha",
-                        "The captcha text you entered was incorrect. A new captcha has been loaded — try again."
-                    ))
-                    loadCaptcha()
-                    return@launch
-                }
+            val valid = scraper.validateCaptcha(s.captchaText, s.orgCaptchaText)
+            if (!valid) {
+                _state.value = _state.value.copy(isLoadingCaptcha = false)
+                _events.emit(ResultViewEvent.ShowErrorDialog(
+                    "Invalid Captcha",
+                    "The captcha text you entered was incorrect. A new captcha has been loaded — try again."
+                ))
+                loadCaptcha()
+                return@launch
             }
 
             val submitResult = scraper.submitResult(
